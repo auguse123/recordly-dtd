@@ -5,7 +5,7 @@ Demandes d'Augustin (2026-10-01), à faire petit à petit.
 | # | Fonctionnalité | Statut |
 |---|---|---|
 | 0 | Signature stable (plus de revalidation des autorisations à chaque mise à jour) | fait (certificat « Recordly DTD Local Signing », `scripts/dtd-install.sh`) |
-| 3 | Début / fin de vidéo (cartes intro et outro) | fait (section « Début / Fin », exports MP4) |
+| 3 | Début / fin de vidéo (cartes intro et outro) | fait : début et fin séparés (carte titre ou image/vidéo), blocs dans la timeline, aperçu dans l’éditeur, exports MP4 |
 | 5 | Indications d'usage dans les formats (LinkedIn, Instagram, YouTube, WhatsApp…) | fait |
 | 8 | Formes (rectangle, cercle pour encadrer) + bandeau nom ; texte existe déjà | formes faites ; bandeau nom à faire |
 | 6 | Choisir un cadre au format cible au moment d'enregistrer (cadre affiché par-dessus l'écran) | à faire |
