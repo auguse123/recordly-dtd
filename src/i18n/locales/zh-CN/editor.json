@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "姓名条",
+		"nameBarDescription": "第 1 行为姓名，下方为职位",
+		"nameBarAccent": "强调色",
+		"nameBarPlaceholder": "你的名字\n你的职位"
 	},
 	"fontStyles": {
 		"classic": "经典",

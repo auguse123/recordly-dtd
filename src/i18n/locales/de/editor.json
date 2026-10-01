@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "Namensbalken",
+		"nameBarDescription": "Name in Zeile 1, Titel darunter",
+		"nameBarAccent": "Akzentfarbe",
+		"nameBarPlaceholder": "Dein Name\nDein Titel"
 	},
 	"fontStyles": {
 		"classic": "Klassisch",

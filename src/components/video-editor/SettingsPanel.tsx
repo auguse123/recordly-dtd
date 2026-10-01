@@ -533,6 +533,7 @@ interface SettingsPanelProps {
 	onAnnotationTypeChange?: (id: string, type: AnnotationType) => void;
 	onAnnotationStyleChange?: (id: string, style: Partial<AnnotationRegion["style"]>) => void;
 	onAnnotationFigureDataChange?: (id: string, figureData: FigureData) => void;
+	onAnnotationPatch?: (id: string, patch: Partial<AnnotationRegion>) => void;
 	onAnnotationBlurIntensityChange?: (id: string, intensity: number) => void;
 	onAnnotationBlurColorChange?: (id: string, color: string) => void;
 	onAnnotationDelete?: (id: string) => void;
@@ -980,6 +981,7 @@ export function SettingsPanel({
 	onAnnotationTypeChange,
 	onAnnotationStyleChange,
 	onAnnotationFigureDataChange,
+	onAnnotationPatch,
 	onAnnotationBlurIntensityChange,
 	onAnnotationBlurColorChange,
 	onAnnotationDelete,
@@ -1795,6 +1797,11 @@ export function SettingsPanel({
 				onBlurColorChange={
 					onAnnotationBlurColorChange
 						? (color) => onAnnotationBlurColorChange(selectedAnnotation.id, color)
+						: undefined
+				}
+				onPatch={
+					onAnnotationPatch
+						? (patch) => onAnnotationPatch(selectedAnnotation.id, patch)
 						: undefined
 				}
 				onDelete={() => onAnnotationDelete(selectedAnnotation.id)}

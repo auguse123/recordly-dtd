@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "Sottopancia",
+		"nameBarDescription": "Nome alla riga 1, ruolo sotto",
+		"nameBarAccent": "Colore di accento",
+		"nameBarPlaceholder": "Il tuo nome\nIl tuo ruolo"
 	},
 	"fontStyles": {
 		"classic": "Classico",

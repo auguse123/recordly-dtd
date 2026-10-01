@@ -3,9 +3,16 @@ import {
 	type ArrowDirection,
 	BLUR_ANNOTATION_STRENGTH,
 	type FigureData,
+	NAME_BAR_ACCENT_WIDTH,
+	NAME_BAR_LINE_GAP,
+	NAME_BAR_NAME_LINE_HEIGHT,
+	NAME_BAR_PADDING_X,
+	NAME_BAR_SUBTITLE_LINE_HEIGHT,
+	NAME_BAR_SUBTITLE_SCALE,
 	SHAPE_CORNER_RADIUS,
 	SHAPE_PADDING,
 	SHAPE_STROKE_SCALE,
+	splitNameBarLines,
 } from "@/components/video-editor/types";
 
 export interface AnnotationRenderAssets {
@@ -284,6 +291,64 @@ function renderArrow(
 	ctx.restore();
 }
 
+/** Mirrors the name bar layout of AnnotationOverlay. */
+function renderNameBar(
+	ctx: CanvasRenderingContext2D,
+	annotation: AnnotationRegion,
+	accentColor: string,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	scaleFactor: number,
+) {
+	const style = annotation.style;
+	const { name, subtitles } = splitNameBarLines(annotation.content);
+	const fontSize = style.fontSize * scaleFactor;
+	const subtitleSize = fontSize * NAME_BAR_SUBTITLE_SCALE;
+	const fontStyle = style.fontStyle === "italic" ? "italic" : "normal";
+
+	ctx.save();
+	ctx.beginPath();
+	ctx.roundRect(x, y, width, height, style.borderRadius * scaleFactor);
+	ctx.clip();
+	if (style.backgroundColor && style.backgroundColor !== "transparent") {
+		ctx.fillStyle = style.backgroundColor;
+		ctx.fillRect(x, y, width, height);
+	}
+	ctx.fillStyle = accentColor;
+	ctx.fillRect(x, y, NAME_BAR_ACCENT_WIDTH * scaleFactor, height);
+
+	const textX = x + (NAME_BAR_ACCENT_WIDTH + NAME_BAR_PADDING_X) * scaleFactor;
+	ctx.beginPath();
+	ctx.rect(textX, y, Math.max(0, x + width - NAME_BAR_PADDING_X * scaleFactor - textX), height);
+	ctx.clip();
+
+	const nameLineHeight = fontSize * NAME_BAR_NAME_LINE_HEIGHT;
+	const subtitleLineHeight = subtitleSize * NAME_BAR_SUBTITLE_LINE_HEIGHT;
+	const blockHeight =
+		nameLineHeight +
+		(subtitles.length > 0
+			? fontSize * NAME_BAR_LINE_GAP + subtitles.length * subtitleLineHeight
+			: 0);
+	let lineTop = y + (height - blockHeight) / 2;
+
+	ctx.textAlign = "left";
+	ctx.textBaseline = "middle";
+	ctx.fillStyle = style.color;
+	ctx.font = `${fontStyle} ${style.fontWeight === "bold" ? "bold" : "normal"} ${fontSize}px ${style.fontFamily}`;
+	ctx.fillText(name, textX, lineTop + nameLineHeight / 2);
+	lineTop += nameLineHeight + fontSize * NAME_BAR_LINE_GAP;
+
+	ctx.globalAlpha *= 0.8;
+	ctx.font = `${fontStyle} normal ${subtitleSize}px ${style.fontFamily}`;
+	for (const line of subtitles) {
+		ctx.fillText(line, textX, lineTop + subtitleLineHeight / 2);
+		lineTop += subtitleLineHeight;
+	}
+	ctx.restore();
+}
+
 function renderText(
 	ctx: CanvasRenderingContext2D,
 	annotation: AnnotationRegion,
@@ -294,6 +359,19 @@ function renderText(
 	scaleFactor: number,
 ) {
 	const style = annotation.style;
+	if (annotation.nameBar) {
+		renderNameBar(
+			ctx,
+			annotation,
+			annotation.nameBar.accentColor,
+			x,
+			y,
+			width,
+			height,
+			scaleFactor,
+		);
+		return;
+	}
 
 	ctx.save();
 

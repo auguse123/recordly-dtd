@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "Name bar",
+		"nameBarDescription": "Name on line 1, title below",
+		"nameBarAccent": "Accent color",
+		"nameBarPlaceholder": "Your name\nYour title"
 	},
 	"fontStyles": {
 		"classic": "Classic",

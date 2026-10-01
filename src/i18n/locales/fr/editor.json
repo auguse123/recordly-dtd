@@ -93,7 +93,11 @@
 		"shape": "Forme",
 		"shapeArrow": "Flèche",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Cercle"
+		"shapeEllipse": "Cercle",
+		"nameBar": "Bandeau nom",
+		"nameBarDescription": "Nom en ligne 1, fonction en dessous",
+		"nameBarAccent": "Couleur d'accent",
+		"nameBarPlaceholder": "Prénom Nom\nFonction"
 	},
 	"fontStyles": {
 		"classic": "Classique",

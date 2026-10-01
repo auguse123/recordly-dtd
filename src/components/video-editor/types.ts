@@ -449,6 +449,11 @@ export interface FigureData {
 	strokeWidth: number;
 }
 
+/** Turns a text annotation into a lower-third: first line is the name, the rest the title. */
+export interface NameBarData {
+	accentColor: string;
+}
+
 export interface AnnotationPosition {
 	x: number;
 	y: number;
@@ -495,6 +500,7 @@ export interface AnnotationRegion {
 	figureData?: FigureData;
 	blurIntensity?: number;
 	blurColor?: string;
+	nameBar?: NameBarData;
 }
 
 export const DEFAULT_ANNOTATION_POSITION: AnnotationPosition = {
@@ -523,6 +529,22 @@ export const DEFAULT_ANNOTATION_STYLE: AnnotationTextStyle = {
 export const SHAPE_STROKE_SCALE = 1.5;
 export const SHAPE_CORNER_RADIUS = 12;
 export const SHAPE_PADDING = 4;
+
+// Name bar layout, in BASE_PREVIEW_WIDTH pixels (line sizes relative to the font size).
+export const NAME_BAR_ACCENT_WIDTH = 8;
+export const NAME_BAR_PADDING_X = 22;
+export const NAME_BAR_SUBTITLE_SCALE = 0.6;
+export const NAME_BAR_NAME_LINE_HEIGHT = 1.2;
+export const NAME_BAR_SUBTITLE_LINE_HEIGHT = 1.35;
+export const NAME_BAR_LINE_GAP = 0.15;
+
+export const DEFAULT_NAME_BAR: NameBarData = { accentColor: "#2ACAA5" };
+
+/** Name on the first line, title lines below it. */
+export function splitNameBarLines(content: string) {
+	const [name = "", ...subtitles] = content.split("\n");
+	return { name, subtitles: subtitles.filter((line) => line.trim().length > 0) };
+}
 
 export const DEFAULT_FIGURE_DATA: FigureData = {
 	arrowDirection: "right",

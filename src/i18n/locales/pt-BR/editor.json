@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "Tarja de nome",
+		"nameBarDescription": "Nome na linha 1, cargo abaixo",
+		"nameBarAccent": "Cor de destaque",
+		"nameBarPlaceholder": "Seu nome\nSeu cargo"
 	},
 	"fontStyles": {
 		"classic": "Classic",

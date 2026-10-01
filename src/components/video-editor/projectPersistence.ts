@@ -645,6 +645,10 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 							: 20,
 						blurColor:
 							typeof region.blurColor === "string" ? region.blurColor : undefined,
+						nameBar:
+							region.nameBar && typeof region.nameBar.accentColor === "string"
+								? { accentColor: region.nameBar.accentColor }
+								: undefined,
 						trackIndex: isFiniteNumber(region.trackIndex)
 							? Math.max(0, Math.floor(region.trackIndex))
 							: 0,

@@ -227,6 +227,7 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		onAnnotationFigureDataChange: annotationCommands.handleAnnotationFigureDataChange,
 		onAnnotationBlurIntensityChange: annotationCommands.handleAnnotationBlurIntensityChange,
 		onAnnotationBlurColorChange: annotationCommands.handleAnnotationBlurColorChange,
+		onAnnotationPatch: annotationCommands.handleAnnotationPatch,
 		onAnnotationDelete: annotationCommands.handleAnnotationDelete,
 	};
 }

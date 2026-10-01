@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "Rótulo con nombre",
+		"nameBarDescription": "Nombre en la línea 1, cargo debajo",
+		"nameBarAccent": "Color de acento",
+		"nameBarPlaceholder": "Tu nombre\nTu cargo"
 	},
 	"fontStyles": {
 		"classic": "Clásico",

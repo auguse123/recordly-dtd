@@ -6,9 +6,16 @@ import {
 	type AnnotationRegion,
 	BASE_PREVIEW_WIDTH,
 	BLUR_ANNOTATION_STRENGTH,
+	NAME_BAR_ACCENT_WIDTH,
+	NAME_BAR_LINE_GAP,
+	NAME_BAR_NAME_LINE_HEIGHT,
+	NAME_BAR_PADDING_X,
+	NAME_BAR_SUBTITLE_LINE_HEIGHT,
+	NAME_BAR_SUBTITLE_SCALE,
 	SHAPE_CORNER_RADIUS,
 	SHAPE_PADDING,
 	SHAPE_STROKE_SCALE,
+	splitNameBarLines,
 } from "./types";
 
 type Rect = {
@@ -130,9 +137,66 @@ export function AnnotationOverlay({
 		);
 	};
 
+	const renderNameBar = (accentColor: string) => {
+		const { style } = annotation;
+		const fontSize = style.fontSize * sizeScale;
+		const { name, subtitles } = splitNameBarLines(annotation.content);
+		const lineStyle = { whiteSpace: "nowrap", overflow: "hidden" } as const;
+		return (
+			<div
+				className="relative w-full h-full flex flex-col justify-center overflow-hidden"
+				style={{
+					backgroundColor: style.backgroundColor,
+					borderRadius: `${style.borderRadius * sizeScale}px`,
+					color: style.color,
+					fontFamily: style.fontFamily,
+					fontStyle: style.fontStyle,
+					paddingLeft: `${(NAME_BAR_ACCENT_WIDTH + NAME_BAR_PADDING_X) * sizeScale}px`,
+					paddingRight: `${NAME_BAR_PADDING_X * sizeScale}px`,
+				}}
+			>
+				<div
+					className="absolute left-0 top-0 bottom-0"
+					style={{
+						width: `${NAME_BAR_ACCENT_WIDTH * sizeScale}px`,
+						backgroundColor: accentColor,
+					}}
+				/>
+				<div
+					style={{
+						...lineStyle,
+						fontSize: `${fontSize}px`,
+						fontWeight: style.fontWeight,
+						lineHeight: NAME_BAR_NAME_LINE_HEIGHT,
+					}}
+				>
+					{name}
+				</div>
+				{subtitles.map((line, index) => (
+					<div
+						key={index}
+						style={{
+							...lineStyle,
+							fontSize: `${fontSize * NAME_BAR_SUBTITLE_SCALE}px`,
+							fontWeight: "normal",
+							lineHeight: NAME_BAR_SUBTITLE_LINE_HEIGHT,
+							opacity: 0.8,
+							marginTop: index === 0 ? `${fontSize * NAME_BAR_LINE_GAP}px` : 0,
+						}}
+					>
+						{line}
+					</div>
+				))}
+			</div>
+		);
+	};
+
 	const renderContent = () => {
 		switch (annotation.type) {
 			case "text":
+				if (annotation.nameBar) {
+					return renderNameBar(annotation.nameBar.accentColor);
+				}
 				return (
 					<div
 						className="w-full h-full flex items-center overflow-hidden"

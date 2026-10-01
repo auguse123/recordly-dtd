@@ -27,6 +27,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { type CustomFont, getCustomFonts } from "@/lib/customFonts";
@@ -34,13 +35,33 @@ import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
 import { AddCustomFontDialog } from "./AddCustomFontDialog";
 import { getArrowComponent } from "./ArrowSvgs";
-import type {
-	AnnotationRegion,
-	AnnotationType,
-	ArrowDirection,
-	FigureData,
-	FigureShape,
+import {
+	type AnnotationRegion,
+	type AnnotationType,
+	type ArrowDirection,
+	DEFAULT_NAME_BAR,
+	type FigureData,
+	type FigureShape,
 } from "./types";
+
+const NAME_BAR_TEXT_STORAGE_KEY = "recordly-dtd:name-bar-text";
+const DEFAULT_TEXT_CONTENT = "Enter text...";
+
+function readStoredNameBarText() {
+	try {
+		return window.localStorage.getItem(NAME_BAR_TEXT_STORAGE_KEY);
+	} catch {
+		return null;
+	}
+}
+
+function storeNameBarText(text: string) {
+	try {
+		window.localStorage.setItem(NAME_BAR_TEXT_STORAGE_KEY, text);
+	} catch {
+		// Remembering the last name is a convenience only.
+	}
+}
 
 const FIGURE_SHAPES: {
 	shape: FigureShape;
@@ -76,6 +97,7 @@ interface AnnotationSettingsPanelProps {
 	onFigureDataChange?: (figureData: FigureData) => void;
 	onBlurIntensityChange?: (intensity: number) => void;
 	onBlurColorChange?: (color: string) => void;
+	onPatch?: (patch: Partial<AnnotationRegion>) => void;
 	onDelete: () => void;
 }
 
@@ -100,6 +122,7 @@ export function AnnotationSettingsPanel({
 	onFigureDataChange,
 	onBlurIntensityChange,
 	onBlurColorChange,
+	onPatch,
 	onDelete,
 }: AnnotationSettingsPanelProps) {
 	const t = useScopedT("editor");
@@ -171,6 +194,38 @@ export function AnnotationSettingsPanel({
 		event.target.value = "";
 	};
 
+	const toggleNameBar = (enabled: boolean) => {
+		if (!onPatch) return;
+		if (!enabled) {
+			onPatch({ nameBar: undefined });
+			return;
+		}
+		const currentText = annotation.textContent || annotation.content;
+		const text =
+			currentText && currentText !== DEFAULT_TEXT_CONTENT
+				? currentText
+				: (readStoredNameBarText() ?? t("annotations.nameBarPlaceholder"));
+		onPatch({
+			nameBar: { ...DEFAULT_NAME_BAR },
+			content: text,
+			textContent: text,
+			// Lower-left third, the usual spot for a name bar.
+			position: { x: 4, y: 76 },
+			size: { width: 40, height: 16 },
+			style: {
+				...annotation.style,
+				color: "#FFFFFF",
+				backgroundColor:
+					annotation.style.backgroundColor === "transparent"
+						? "#0F172A"
+						: annotation.style.backgroundColor,
+				fontSize: 40,
+				fontWeight: "bold",
+				textAlign: "left",
+			},
+		});
+	};
+
 	return (
 		<Card className="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden rounded-none bg-transparent p-0 shadow-none">
 			<div className="flex-1 min-h-0 px-5 pb-6 pt-1 overflow-y-auto custom-scrollbar">
@@ -238,12 +293,46 @@ export function AnnotationSettingsPanel({
 									</label>
 									<TextArea
 										value={annotation.textContent || annotation.content}
-										onChange={(e) => onContentChange(e.target.value)}
+										onChange={(e) => {
+											onContentChange(e.target.value);
+											if (annotation.nameBar)
+												storeNameBarText(e.target.value);
+										}}
 										placeholder={t("annotations.textPlaceholder")}
 										rows={3}
 										className="w-full px-3 py-2 text-sm resize-none"
 									/>
 								</div>
+
+								{onPatch && (
+									<div className="space-y-3">
+										<div className="flex items-center justify-between gap-3">
+											<div>
+												<div className="text-sm font-medium text-foreground">
+													{t("annotations.nameBar")}
+												</div>
+												<div className="text-xs text-muted-foreground">
+													{t("annotations.nameBarDescription")}
+												</div>
+											</div>
+											<Switch
+												aria-label={t("annotations.nameBar")}
+												checked={Boolean(annotation.nameBar)}
+												onCheckedChange={toggleNameBar}
+											/>
+										</div>
+										{annotation.nameBar && (
+											<ColorControl
+												value={annotation.nameBar.accentColor}
+												label={t("annotations.nameBarAccent")}
+												onChange={(accentColor) =>
+													onPatch({ nameBar: { accentColor } })
+												}
+												colors={colorPalette}
+											/>
+										)}
+									</div>
+								)}
 
 								{/* Styling Controls */}
 								<div className="space-y-4">

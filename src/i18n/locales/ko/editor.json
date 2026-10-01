@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "이름 자막",
+		"nameBarDescription": "1행에 이름, 아래에 직함",
+		"nameBarAccent": "강조 색상",
+		"nameBarPlaceholder": "이름\n직함"
 	},
 	"fontStyles": {
 		"classic": "클래식",

@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "姓名條",
+		"nameBarDescription": "第 1 行為姓名，下方為職稱",
+		"nameBarAccent": "強調色",
+		"nameBarPlaceholder": "你的名字\n你的職稱"
 	},
 	"fontStyles": {
 		"classic": "經典",

@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "Naambalk",
+		"nameBarDescription": "Naam op regel 1, functie eronder",
+		"nameBarAccent": "Accentkleur",
+		"nameBarPlaceholder": "Je naam\nJe functie"
 	},
 	"fontStyles": {
 		"classic": "Klassiek",

@@ -156,6 +156,10 @@ export function useAnnotationRegionCommands({
 		(id: string, blurColor: string) => updateRegion(id, { blurColor }),
 		[updateRegion],
 	);
+	const handleAnnotationPatch = useCallback(
+		(id: string, patch: Partial<AnnotationRegion>) => updateRegion(id, patch),
+		[updateRegion],
+	);
 	const handleAnnotationPositionChange = useCallback(
 		(id: string, position: { x: number; y: number }) => updateRegion(id, { position }),
 		[updateRegion],
@@ -177,5 +181,6 @@ export function useAnnotationRegionCommands({
 		handleAnnotationBlurColorChange,
 		handleAnnotationPositionChange,
 		handleAnnotationSizeChange,
+		handleAnnotationPatch,
 	};
 }

@@ -93,7 +93,11 @@
 		"shape": "Shape",
 		"shapeArrow": "Arrow",
 		"shapeRectangle": "Rectangle",
-		"shapeEllipse": "Circle"
+		"shapeEllipse": "Circle",
+		"nameBar": "Плашка с именем",
+		"nameBarDescription": "Имя в 1-й строке, должность ниже",
+		"nameBarAccent": "Акцентный цвет",
+		"nameBarPlaceholder": "Ваше имя\nВаша должность"
 	},
 	"fontStyles": {
 		"classic": "Классический",
