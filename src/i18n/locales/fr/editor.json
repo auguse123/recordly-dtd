@@ -91,7 +91,6 @@
 		"solidColor": "Couleur unie (censure)",
 		"borderRadius": "Rayon de bordure"
 	},
-
 	"fontStyles": {
 		"classic": "Classique",
 		"editor": "Éditeur",
@@ -169,7 +168,10 @@
 		"experimentalBuilds": "Astuce : Activez l’accès aux versions expérimentales dans les paramètres",
 		"cursorAppearance": "Astuce : Vous pouvez personnaliser l’apparence du curseur"
 	},
-	"account": { "title": "Compte", "comingSoon": "Compte bientôt disponible" },
+	"account": {
+		"title": "Compte",
+		"comingSoon": "Compte bientôt disponible"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "Rien n'est cassé, mais nous ne pourrons pas afficher une superposition animée du curseur.",
 		"description": "Votre appareil ne prend pas en charge la capture native. Cela peut arriver pour plusieurs raisons que nous n'avons pas encore identifiées. Recordly continuera de fonctionner, mais le lissage du curseur sera impossible.",
@@ -189,7 +191,17 @@
 	},
 	"toolbar": {
 		"addLayer": "Ajouter une couche",
-		"splitClip": "Diviser le clip (C)"
+		"splitClip": "Diviser le clip (C)",
+		"aspectHints": {
+			"native": "Taille d'origine de l'enregistrement",
+			"16:9": "Idéal YouTube, site web, email, WhatsApp",
+			"9:16": "Idéal Stories, Reels, TikTok, statut WhatsApp",
+			"1:1": "Fil LinkedIn & Instagram",
+			"4:3": "Présentations, diaporamas",
+			"4:5": "Idéal fil LinkedIn & Instagram",
+			"16:10": "Écran Mac",
+			"10:16": "Vertical, écran Mac pivoté"
+		}
 	},
 	"timeline": {
 		"expand": "Développer la timeline",

@@ -142,7 +142,12 @@ export function EditorPreviewPanel(props: Props) {
 										onClick={() => setAspectRatio(ratio)}
 										className="flex cursor-pointer items-center justify-between gap-3 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
 									>
-										<span>{getAspectRatioLabel(ratio)}</span>
+										<span className="flex flex-col">
+											<span>{getAspectRatioLabel(ratio)}</span>
+											<span className="text-[10px] leading-tight opacity-70">
+												{t(`editor.toolbar.aspectHints.${ratio}`, "")}
+											</span>
+										</span>
 										{aspectRatio === ratio ? (
 											<Check className="h-3 w-3 text-[#2563EB]" />
 										) : null}
