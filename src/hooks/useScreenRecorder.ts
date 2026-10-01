@@ -46,6 +46,7 @@ export type BrowserMicrophoneProfile =
 	| "no-noise-suppression"
 	| "raw";
 type BrowserCaptureCursorMode = "always" | "never";
+type CaptureFrame = NonNullable<Awaited<ReturnType<typeof window.electronAPI.getCaptureFrame>>>;
 export type BrowserCaptureCursorPolicy = {
 	streamCursor: BrowserCaptureCursorMode;
 	hideOsCursorBeforeRecording: boolean;
@@ -433,6 +434,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	);
 	const requestedBrowserMicrophoneProfile = useRef<string | null>(null);
 	const hideEditorOverlayCursorByDefault = useRef(false);
+	const recordingCaptureFrame = useRef<CaptureFrame | undefined>(undefined);
 
 	const notifyRecordingFinalizationFailure = useCallback(async (message: string) => {
 		setFinalizing(false);
@@ -748,10 +750,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 						webcamPath,
 						timeOffsetMs: webcamTimeOffsetMs.current,
 						hideOverlayCursorByDefault: shouldHideOverlayCursor,
+						captureFrame: recordingCaptureFrame.current,
 					});
 				} else {
 					await window.electronAPI.setCurrentVideoPath(videoPath, {
 						hideOverlayCursorByDefault: shouldHideOverlayCursor,
+						captureFrame: recordingCaptureFrame.current,
 					});
 				}
 			} catch (error) {
@@ -760,6 +764,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 				try {
 					await window.electronAPI.setCurrentVideoPath(videoPath, {
 						hideOverlayCursorByDefault: shouldHideOverlayCursor,
+						captureFrame: recordingCaptureFrame.current,
 					});
 				} catch (fallbackError) {
 					console.error("Failed to persist fallback video path:", fallbackError);
@@ -1128,6 +1133,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const prepareRecordingStart = useCallback(async () => {
 		const platform = await window.electronAPI.getPlatform();
 		hideEditorOverlayCursorByDefault.current = false;
+		recordingCaptureFrame.current = (await window.electronAPI.getCaptureFrame?.()) ?? undefined;
 		const existingSource = await window.electronAPI.getSelectedSource();
 		const selectedSource =
 			existingSource ?? (platform === "linux" ? LINUX_PORTAL_SOURCE : null);
@@ -1382,6 +1388,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 										timeOffsetMs: webcamTimeOffsetMs.current,
 										hideOverlayCursorByDefault:
 											hideEditorOverlayCursorByDefault.current,
+										captureFrame: recordingCaptureFrame.current,
 									});
 								} catch (sessionError) {
 									console.error(
@@ -1435,6 +1442,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 							webcamPath,
 							timeOffsetMs: webcamTimeOffsetMs.current,
 							hideOverlayCursorByDefault: hideEditorOverlayCursorByDefault.current,
+							captureFrame: recordingCaptureFrame.current,
 						});
 
 						console.log(
@@ -2214,6 +2222,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 										timeOffsetMs: webcamTimeOffsetMs.current,
 										hideOverlayCursorByDefault:
 											hideEditorOverlayCursorByDefault.current,
+										captureFrame: recordingCaptureFrame.current,
 									});
 								}
 							} finally {

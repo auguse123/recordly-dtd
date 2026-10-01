@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OPEN_EDITOR_SECTION_EVENT } from "@/lib/announcementActions";
 import { type AnnouncementEditorSection, isAnnouncementEditorSection } from "@/lib/announcements";
-import type { AspectRatio } from "@/utils/aspectRatioUtils";
+import { ASPECT_RATIOS, type AspectRatio } from "@/utils/aspectRatioUtils";
 import type { loadEditorPreferences } from "../editorPreferences";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { CropRegion, EditorEffectSection } from "../types";
@@ -10,6 +10,7 @@ import type { VideoPlaybackRef } from "../VideoPlayback";
 type SessionPresentation = {
 	hideOverlayCursorByDefault?: boolean;
 	nativeCaptureUnavailable?: boolean;
+	captureFrame?: { aspectRatio: string; cropRegion: CropRegion };
 };
 
 export function useEditorUiState(
@@ -92,8 +93,17 @@ export function useEditorUiState(
 			setSessionShowCursorOverride(session?.hideOverlayCursorByDefault ? false : null);
 			setSessionNativeCaptureUnavailable(Boolean(session?.nativeCaptureUnavailable));
 			setNativeCaptureUnavailableModalOpen(Boolean(session?.nativeCaptureUnavailable));
+			// A frame chosen at record time presets the output format and crop.
+			const captureFrame = session?.captureFrame;
+			if (
+				captureFrame &&
+				(ASPECT_RATIOS as readonly string[]).includes(captureFrame.aspectRatio)
+			) {
+				setAspectRatio(captureFrame.aspectRatio as AspectRatio);
+				setCropRegion({ ...captureFrame.cropRegion });
+			}
 		},
-		[],
+		[setCropRegion],
 	);
 	const handleOpenCropEditor = useCallback(() => {
 		cropSnapshotRef.current = { ...cropRegion };

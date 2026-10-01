@@ -48,6 +48,11 @@ export type RecordingSessionData = {
 	webcamPath?: string | null;
 	timeOffsetMs?: number;
 	hideOverlayCursorByDefault?: boolean;
+	/** Target-format frame shown while recording; presets the editor's aspect and crop. */
+	captureFrame?: {
+		aspectRatio: string;
+		cropRegion: { x: number; y: number; width: number; height: number };
+	};
 };
 
 export type PauseSegment = {

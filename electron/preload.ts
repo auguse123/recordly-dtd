@@ -785,6 +785,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		options?: {
 			preserveProjectPath?: boolean;
 			hideOverlayCursorByDefault?: boolean;
+			captureFrame?: {
+				aspectRatio: string;
+				cropRegion: { x: number; y: number; width: number; height: number };
+			};
 		},
 	) => {
 		return ipcRenderer.invoke("set-current-video-path", path, options);
@@ -795,6 +799,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			webcamPath?: string | null;
 			timeOffsetMs?: number;
 			hideOverlayCursorByDefault?: boolean;
+			captureFrame?: {
+				aspectRatio: string;
+				cropRegion: { x: number; y: number; width: number; height: number };
+			};
 		},
 		options?: { preserveProjectPath?: boolean },
 	) => {
@@ -1103,7 +1111,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 		webcamEnabled?: boolean;
 		webcamDeviceId?: string;
 		voiceDenoiseEnabled?: boolean;
+		recordingFrameAspect?: string;
 	}) => ipcRenderer.invoke("set-recording-preferences", prefs),
+	setCaptureFrameAspect: (aspect: string | null) =>
+		ipcRenderer.invoke("set-capture-frame-aspect", aspect),
+	getCaptureFrame: () => ipcRenderer.invoke("get-capture-frame"),
 	getCountdownDelay: () => ipcRenderer.invoke("get-countdown-delay"),
 	setCountdownDelay: (delay: number) => ipcRenderer.invoke("set-countdown-delay", delay),
 	finishRecordingStartup: () => ipcRenderer.invoke("finish-recording-startup"),

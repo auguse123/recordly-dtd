@@ -5,11 +5,12 @@ import type { getDevOpenRecordingConfig, getSmokeExportConfig } from "../smokeEx
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useProjectState } from "../state/useProjectState";
 import type { useTimelineState } from "../state/useTimelineState";
-import { DEFAULT_WEBCAM_TIME_OFFSET_MS } from "../types";
+import { type CropRegion, DEFAULT_WEBCAM_TIME_OFFSET_MS } from "../types";
 
 type SessionPresentation = {
 	hideOverlayCursorByDefault?: boolean;
 	nativeCaptureUnavailable?: boolean;
+	captureFrame?: { aspectRatio: string; cropRegion: CropRegion };
 };
 
 type Input = {

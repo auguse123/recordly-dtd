@@ -1,12 +1,13 @@
-import { createRecordingEditorNavigation } from "../../recordingEditorNavigation";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { app, BrowserWindow, desktopCapturer, ipcMain, systemPreferences } from "electron";
+import { refreshCaptureFrameOverlay } from "../../captureFrameOverlay";
+import { createRecordingEditorNavigation } from "../../recordingEditorNavigation";
 import {
-	setHudRecordingPreparationActive,
 	createHudOverlayWindow,
 	getHudOverlayWindow,
 	reassertHudOverlayMousePassthrough,
+	setHudRecordingPreparationActive,
 } from "../../windows";
 import { ALLOW_RECORDLY_WINDOW_CAPTURE } from "../constants";
 import {
@@ -394,6 +395,7 @@ export function registerSourceHandlers({
 		}
 		setSelectedSource(source);
 		broadcastSelectedSourceChange();
+		refreshCaptureFrameOverlay();
 		stopWindowBoundsCapture();
 		const sourceSelectorWin = getSourceSelectorWindow();
 		if (sourceSelectorWin) {

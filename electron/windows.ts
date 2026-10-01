@@ -1,14 +1,14 @@
-import { isHudInEditorMode } from "./hudEditorMode";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, ipcMain } from "electron";
 import {
-	supportsHudCaptureProtection,
 	shouldProtectHudCapture,
+	supportsHudCaptureProtection,
 } from "../src/lib/hudCaptureProtection";
 import { USER_DATA_PATH } from "./appPaths";
+import { isHudInEditorMode } from "./hudEditorMode";
 import {
 	getHudOverlayWindowBounds,
 	resizeHudOverlayFallbackBounds,
@@ -480,6 +480,24 @@ function notifyEditorMode() {
 	if (hudOverlayWindow && !hudOverlayWindow.webContents.isDestroyed()) {
 		hudOverlayWindow.webContents.send("editor-mode-changed", getHudEditorMode());
 	}
+	emitHudPresentationChanged();
+}
+
+const hudPresentationListeners = new Set<() => void>();
+/** Notified whenever the recorder HUD is shown, hidden or switches editor mode. */
+export function onHudPresentationChanged(listener: () => void): () => void {
+	hudPresentationListeners.add(listener);
+	return () => hudPresentationListeners.delete(listener);
+}
+function emitHudPresentationChanged() {
+	for (const listener of hudPresentationListeners) {
+		listener();
+	}
+}
+/** True while the HUD is on screen as the recorder (not as the editor's companion). */
+export function isHudShowingRecorder(): boolean {
+	const hud = getHudOverlayWindow();
+	return Boolean(hud?.isVisible()) && !getHudEditorMode();
 }
 ipcMain.handle("get-editor-mode", getHudEditorMode);
 
@@ -564,7 +582,9 @@ export function createHudOverlayWindow(): BrowserWindow {
 		if (!win.isDestroyed()) {
 			applyHudOverlayCaptureProtectionToWindow(win, hudOverlayHiddenFromCapture);
 		}
+		emitHudPresentationChanged();
 	});
+	win.on("hide", emitHudPresentationChanged);
 
 	if (isHudOverlayMousePassthroughSupported()) {
 		if (hudOverlayRecordingActive) {
@@ -669,6 +689,7 @@ export function createHudOverlayWindow(): BrowserWindow {
 			hudCaptureStarting = false;
 			hudOverlayRecordingActive = false;
 		}
+		emitHudPresentationChanged();
 	});
 
 	if (VITE_DEV_SERVER_URL) {

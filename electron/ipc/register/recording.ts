@@ -13,8 +13,9 @@ import {
 	systemPreferences,
 } from "electron";
 import { getHudCaptureExcludedProcessIds } from "../../../src/lib/hudCaptureProtection";
+import { getActiveCaptureFrame } from "../../captureFrameOverlay";
 import { showCursor } from "../../cursorHider";
-import { getHudOverlayCaptureProtectionEnabled, beginHudCaptureProtection } from "../../windows";
+import { beginHudCaptureProtection, getHudOverlayCaptureProtectionEnabled } from "../../windows";
 import { ALLOW_RECORDLY_WINDOW_CAPTURE } from "../constants";
 import { startWindowBoundsCapture, stopWindowBoundsCapture } from "../cursor/bounds";
 import { startInteractionCapture, stopInteractionCapture } from "../cursor/interaction";
@@ -737,7 +738,9 @@ export function registerRecordingHandlers(
 
 				const excludedProcessIds = getHudCaptureExcludedProcessIds(
 					process.platform,
-					getHudOverlayCaptureProtectionEnabled(),
+					// The capture frame guide is a Recordly window; excluding the
+					// process keeps it out of the video even if the HUD stays visible.
+					getHudOverlayCaptureProtectionEnabled() || getActiveCaptureFrame() !== null,
 					process.pid,
 				);
 				if (excludedProcessIds.length > 0) {

@@ -761,6 +761,10 @@ interface Window {
 			options?: {
 				preserveProjectPath?: boolean;
 				hideOverlayCursorByDefault?: boolean;
+				captureFrame?: {
+					aspectRatio: string;
+					cropRegion: { x: number; y: number; width: number; height: number };
+				};
 			},
 		) => Promise<{ success: boolean; webcamPath: string | null }>;
 		setCurrentRecordingSession: (
@@ -769,6 +773,10 @@ interface Window {
 				webcamPath?: string | null;
 				timeOffsetMs?: number;
 				hideOverlayCursorByDefault?: boolean;
+				captureFrame?: {
+					aspectRatio: string;
+					cropRegion: { x: number; y: number; width: number; height: number };
+				};
 			},
 			options?: { preserveProjectPath?: boolean },
 		) => Promise<{ success: boolean }>;
@@ -779,6 +787,10 @@ interface Window {
 				webcamPath?: string | null;
 				timeOffsetMs?: number;
 				hideOverlayCursorByDefault?: boolean;
+				captureFrame?: {
+					aspectRatio: string;
+					cropRegion: { x: number; y: number; width: number; height: number };
+				};
 			};
 		}>;
 		getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
@@ -1028,6 +1040,7 @@ interface Window {
 			webcamEnabled: boolean;
 			webcamDeviceId?: string;
 			voiceDenoiseEnabled: boolean;
+			recordingFrameAspect?: string;
 		}>;
 		getRecordingAudioLabConfig: () => Promise<{
 			browserMicrophoneProfile: string;
@@ -1040,7 +1053,18 @@ interface Window {
 			webcamEnabled?: boolean;
 			webcamDeviceId?: string;
 			voiceDenoiseEnabled?: boolean;
+			/** Target-format frame shown over the screen while recording ("none" = off). */
+			recordingFrameAspect?: string;
 		}) => Promise<{ success: boolean; error?: string }>;
+		/** Shows (or hides with null) the target-format frame over the selected screen. */
+		setCaptureFrameAspect: (
+			aspect: string | null,
+		) => Promise<{ success: boolean; aspect: string | null }>;
+		/** Current frame on the selected screen, or null without a frame / for windows. */
+		getCaptureFrame: () => Promise<{
+			aspectRatio: string;
+			cropRegion: { x: number; y: number; width: number; height: number };
+		} | null>;
 		/** Countdown timer before recording */
 		getCountdownDelay: () => Promise<{ success: boolean; delay: number }>;
 		setCountdownDelay: (delay: number) => Promise<{ success: boolean; error?: string }>;

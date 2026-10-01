@@ -1,8 +1,11 @@
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import {
 	ArrowClockwiseIcon,
 	CaretUpIcon,
-	House,
+	Crop,
 	DotsThreeVerticalIcon,
+	House,
 	MicrophoneIcon,
 	MicrophoneSlashIcon,
 	MinusIcon,
@@ -12,8 +15,6 @@ import {
 	VideoCameraSlashIcon,
 	XIcon,
 } from "@/components/ui/icons";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef } from "react";
 import { Separator } from "@/components/ui/separator";
 import { useScopedT } from "../../contexts/I18nContext";
 import { useMicrophoneDevices } from "../../hooks/useMicrophoneDevices";
@@ -31,6 +32,11 @@ import { useWebcamPreviewOverlay } from "./hooks/useWebcamPreviewOverlay";
 import styles from "./LaunchWindow.module.css";
 import { MarqueeText } from "./MarqueeText";
 import { CountdownPopover } from "./popovers/CountdownPopover";
+import {
+	type CaptureFrameOption,
+	FramePopover,
+	parseCaptureFrameOption,
+} from "./popovers/FramePopover";
 import {
 	LaunchPopoverCoordinatorProvider,
 	useLaunchPopoverCoordinator,
@@ -82,6 +88,25 @@ function LaunchWindowContent() {
 
 	const { selectedSource, hasSelectedSource, handleSourceSelect, syncSelectedSource } =
 		useLaunchWindowActions();
+
+	const [frameAspect, setFrameAspect] = useState<CaptureFrameOption>("none");
+	useEffect(() => {
+		let cancelled = false;
+		void window.electronAPI?.getRecordingPreferences?.().then((prefs) => {
+			if (cancelled) return;
+			const aspect = parseCaptureFrameOption(prefs.recordingFrameAspect);
+			setFrameAspect(aspect);
+			void window.electronAPI.setCaptureFrameAspect(aspect === "none" ? null : aspect);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+	const selectFrameAspect = (aspect: CaptureFrameOption) => {
+		setFrameAspect(aspect);
+		void window.electronAPI.setRecordingPreferences({ recordingFrameAspect: aspect });
+		void window.electronAPI.setCaptureFrameAspect(aspect === "none" ? null : aspect);
+	};
 
 	const showWebcamControls = webcamEnabled && !recording;
 	const { devices, selectedDeviceId, setSelectedDeviceId } = useMicrophoneDevices(
@@ -337,6 +362,27 @@ function LaunchWindowContent() {
 					</Button>
 				}
 			/>
+
+			{platform !== "linux" && (
+				<FramePopover
+					frameAspect={frameAspect}
+					onSelectAspect={selectFrameAspect}
+					trigger={
+						<Button
+							variant="ghost"
+							size="icon"
+							iconSize="lg"
+							title={t("recording.captureFrame")}
+							className={frameAspect !== "none" ? "text-accent" : ""}
+						>
+							<Crop
+								weight={openId === "frame" ? "fill" : "regular"}
+								className="size-5"
+							/>
+						</Button>
+					}
+				/>
+			)}
 
 			<CountdownPopover
 				countdownDelay={countdownDelay}

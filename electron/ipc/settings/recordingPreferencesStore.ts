@@ -8,6 +8,7 @@ export interface RecordingPreferencesPatch {
 	webcamEnabled?: boolean;
 	webcamDeviceId?: string;
 	voiceDenoiseEnabled?: boolean;
+	recordingFrameAspect?: string;
 }
 
 export function createRecordingPreferencesStore(filePath: string) {
