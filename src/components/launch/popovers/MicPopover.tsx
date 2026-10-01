@@ -81,15 +81,13 @@ export function MicPopover({
 					? t("recording.disableSystemAudio")
 					: t("recording.enableSystemAudio")}
 			</DropdownItem>
-			{microphoneEnabled && (
-				<DropdownItem
-					icon={<MagicWand size={16} />}
-					selected={voiceDenoiseEnabled}
-					onClick={toggleVoiceDenoise}
-				>
-					{t("recording.voiceDenoise")}
-				</DropdownItem>
-			)}
+			<DropdownItem
+				icon={<MagicWand size={16} />}
+				selected={voiceDenoiseEnabled}
+				onClick={toggleVoiceDenoise}
+			>
+				{t("recording.voiceDenoise")}
+			</DropdownItem>
 			{microphoneEnabled && (
 				<DropdownItem
 					icon={<MicrophoneSlashIcon size={16} />}
