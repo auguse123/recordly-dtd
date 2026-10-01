@@ -161,7 +161,8 @@
 		"cursor": "游標",
 		"webcam": "網路攝影機",
 		"frame": "外框",
-		"crop": "裁切"
+		"crop": "裁切",
+		"introOutro": "Intro / Outro"
 	},
 	"captions": {
 		"selectOnTimeline": "在時間軸上選擇字幕進行編輯。",
@@ -258,5 +259,24 @@
 		"title": "更新",
 		"experimental": "實驗性更新",
 		"saveFailed": "無法變更更新頻道。"
+	},
+	"introOutro": {
+		"heading": "Intro / Outro",
+		"hint": "Title cards added at the start and end of MP4 exports, with a short fade.",
+		"reset": "Reset",
+		"intro": "Intro",
+		"outro": "Outro",
+		"title": "Title",
+		"subtitle": "Subtitle",
+		"duration": "Card duration",
+		"logo": "Logo",
+		"uploadLogo": "Upload logo",
+		"defaultLogo": "Use Desk to Desk logo",
+		"logoInvalid": "Choose an image file (PNG, SVG, JPG).",
+		"logoTooLarge": "Logo must be under 2 MB.",
+		"colors": "Colors",
+		"background": "Background",
+		"text": "Text",
+		"accent": "Accent"
 	}
 }

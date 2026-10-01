@@ -1,4 +1,3 @@
-import { getLocalMediaServerPath } from "@/lib/localMediaUrl";
 import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/audioTypes";
 import type {
 	ExportBackendPreference,
@@ -11,10 +10,12 @@ import type {
 	GifSizePreset,
 } from "@/lib/exporter";
 import { isValidMp4FrameRate } from "@/lib/exporter/types";
+import { getLocalMediaServerPath } from "@/lib/localMediaUrl";
 import { DEFAULT_WALLPAPER_PATH } from "@/lib/wallpapers";
 import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/aspectRatioUtils";
 import { closeClipGaps, rippleRegionAnchors, rippleRegions } from "./clipSequence";
 import { CURSOR_MOTION_PRESETS, resolveCursorMotionPresetId } from "./cursorMotionPresets";
+import { type IntroOutroSettings, normalizeIntroOutroSettings } from "./introOutro";
 import {
 	ADVANCED_VERTICAL_PADDING_MAX,
 	type AnnotationRegion,
@@ -155,6 +156,7 @@ export interface ProjectEditorState {
 	gifFrameRate: GifFrameRate;
 	gifLoop: boolean;
 	gifSizePreset: GifSizePreset;
+	introOutro: IntroOutroSettings;
 }
 
 export interface EditorProjectData {
@@ -1120,6 +1122,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			editor.gifSizePreset === "original"
 				? editor.gifSizePreset
 				: "medium",
+		introOutro: normalizeIntroOutroSettings(editor.introOutro),
 	};
 }
 

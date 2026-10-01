@@ -507,6 +507,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	discardExportedTemp: (tempPath: string) => {
 		return ipcRenderer.invoke("discard-exported-temp", tempPath);
 	},
+	applyIntroOutro: (payload: {
+		tempPath: string;
+		introPng?: Uint8Array | null;
+		outroPng?: Uint8Array | null;
+		durationSec: number;
+	}) => {
+		return ipcRenderer.invoke("apply-intro-outro", payload);
+	},
 	getVideoAudioFallbackPaths: (videoPath: string) => {
 		return ipcRenderer.invoke("get-video-audio-fallback-paths", videoPath);
 	},

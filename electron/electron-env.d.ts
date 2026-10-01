@@ -583,6 +583,12 @@ interface Window {
 			error?: string;
 		}>;
 		discardExportedTemp: (tempPath: string) => Promise<{ success: boolean; error?: string }>;
+		applyIntroOutro: (payload: {
+			tempPath: string;
+			introPng?: Uint8Array | null;
+			outroPng?: Uint8Array | null;
+			durationSec: number;
+		}) => Promise<{ success: boolean; tempPath?: string; error?: string }>;
 		getVideoAudioFallbackPaths: (videoPath: string) => Promise<{
 			success: boolean;
 			paths: string[];

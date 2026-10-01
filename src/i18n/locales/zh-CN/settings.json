@@ -161,7 +161,8 @@
 		"cursor": "光标",
 		"webcam": "摄像头",
 		"frame": "边框",
-		"crop": "裁剪"
+		"crop": "裁剪",
+		"introOutro": "Intro / Outro"
 	},
 	"captions": {
 		"selectOnTimeline": "在时间轴上选择字幕进行编辑。",
@@ -258,5 +259,24 @@
 		"title": "更新",
 		"experimental": "实验性更新",
 		"saveFailed": "无法更改更新频道。"
+	},
+	"introOutro": {
+		"heading": "Intro / Outro",
+		"hint": "Title cards added at the start and end of MP4 exports, with a short fade.",
+		"reset": "Reset",
+		"intro": "Intro",
+		"outro": "Outro",
+		"title": "Title",
+		"subtitle": "Subtitle",
+		"duration": "Card duration",
+		"logo": "Logo",
+		"uploadLogo": "Upload logo",
+		"defaultLogo": "Use Desk to Desk logo",
+		"logoInvalid": "Choose an image file (PNG, SVG, JPG).",
+		"logoTooLarge": "Logo must be under 2 MB.",
+		"colors": "Colors",
+		"background": "Background",
+		"text": "Text",
+		"accent": "Accent"
 	}
 }

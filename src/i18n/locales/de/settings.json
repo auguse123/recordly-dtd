@@ -161,7 +161,8 @@
 		"cursor": "Cursor",
 		"webcam": "Webcam",
 		"frame": "Bild",
-		"crop": "Zuschneiden"
+		"crop": "Zuschneiden",
+		"introOutro": "Intro / Outro"
 	},
 	"captions": {
 		"selectOnTimeline": "Wählen Sie einen Untertitel auf der Zeitleiste aus, um ihn zu bearbeiten.",
@@ -258,5 +259,24 @@
 		"title": "Updates",
 		"experimental": "Experimentelle Updates",
 		"saveFailed": "Update-Kanal konnte nicht geändert werden."
+	},
+	"introOutro": {
+		"heading": "Intro / Outro",
+		"hint": "Title cards added at the start and end of MP4 exports, with a short fade.",
+		"reset": "Reset",
+		"intro": "Intro",
+		"outro": "Outro",
+		"title": "Title",
+		"subtitle": "Subtitle",
+		"duration": "Card duration",
+		"logo": "Logo",
+		"uploadLogo": "Upload logo",
+		"defaultLogo": "Use Desk to Desk logo",
+		"logoInvalid": "Choose an image file (PNG, SVG, JPG).",
+		"logoTooLarge": "Logo must be under 2 MB.",
+		"colors": "Colors",
+		"background": "Background",
+		"text": "Text",
+		"accent": "Accent"
 	}
 }

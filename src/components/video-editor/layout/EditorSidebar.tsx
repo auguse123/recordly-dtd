@@ -1,17 +1,24 @@
-import { AccountAvatar } from "@/components/ui/account-avatar";
-import type { User } from "@supabase/supabase-js";
-import { Camera, ClosedCaptioning, Cursor, Gear, FrameCorners } from "@/components/ui/icons";
 import {
-	ToggleButtonGroup,
-	ToggleButton,
 	Button,
-	Tooltip,
 	Card,
-	Switch,
 	Label,
+	Switch,
+	ToggleButton,
+	ToggleButtonGroup,
+	Tooltip,
 } from "@heroui/react";
+import type { User } from "@supabase/supabase-js";
 import type { ComponentProps, ReactNode } from "react";
 import { useMemo, useState } from "react";
+import { AccountAvatar } from "@/components/ui/account-avatar";
+import {
+	Camera,
+	ClosedCaptioning,
+	Cursor,
+	FilmSlate,
+	FrameCorners,
+	Gear,
+} from "@/components/ui/icons";
 import type { useI18n } from "@/contexts/I18nContext";
 import ExtensionManager from "../ExtensionManager";
 import { SettingsPanel } from "../SettingsPanel";
@@ -56,6 +63,11 @@ export function EditorSidebar({
 				id: "captions" as const,
 				label: t("settings.sections.captions", "Captions"),
 				icon: ClosedCaptioning,
+			},
+			{
+				id: "introOutro" as const,
+				label: t("settings.sections.introOutro", "Intro / Outro"),
+				icon: FilmSlate,
 			},
 			{
 				id: "settings" as const,

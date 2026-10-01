@@ -7,6 +7,7 @@ import { calculateMp4ExportDimensions, capMp4ShareDimensions } from "../exportDi
 import { resolveMp4ExportRouting } from "../mp4ExportRouting";
 import { resolveMp4ExportSettings } from "../mp4ExportSettings";
 import { createSmokeExportProgressSampler } from "../smokeExportProgress";
+import { applyIntroOutroToExport } from "./applyIntroOutro";
 import { buildExportRenderOptions } from "./buildExportRenderOptions";
 import {
 	type PendingExportSave,
@@ -337,7 +338,14 @@ export function useExportRunner(input: ExportRunnerInput) {
 							: new Exporter(exporterConfig);
 
 					exporterRef.current = exporter;
-					const result = await exporter.export();
+					const renderedResult = await exporter.export();
+					if (exportWasCancelled()) return;
+					const result = await applyIntroOutroToExport(
+						renderedResult,
+						exportSettings.introOutro,
+						exportWidth,
+						exportHeight,
+					);
 					if (exportWasCancelled()) return;
 					const smokeExportElapsedMs =
 						smokeExportStartedAt !== null

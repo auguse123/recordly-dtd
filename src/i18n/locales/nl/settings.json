@@ -161,7 +161,8 @@
 		"cursor": "Cursor",
 		"webcam": "Webcam",
 		"frame": "Kader",
-		"crop": "Bijsnijden"
+		"crop": "Bijsnijden",
+		"introOutro": "Intro / Outro"
 	},
 	"captions": {
 		"selectOnTimeline": "Selecteer een ondertitel op de tijdlijn om deze te bewerken.",
@@ -258,5 +259,24 @@
 		"title": "Updates",
 		"experimental": "Experimentele updates",
 		"saveFailed": "Kan het updatekanaal niet wijzigen."
+	},
+	"introOutro": {
+		"heading": "Intro / Outro",
+		"hint": "Title cards added at the start and end of MP4 exports, with a short fade.",
+		"reset": "Reset",
+		"intro": "Intro",
+		"outro": "Outro",
+		"title": "Title",
+		"subtitle": "Subtitle",
+		"duration": "Card duration",
+		"logo": "Logo",
+		"uploadLogo": "Upload logo",
+		"defaultLogo": "Use Desk to Desk logo",
+		"logoInvalid": "Choose an image file (PNG, SVG, JPG).",
+		"logoTooLarge": "Logo must be under 2 MB.",
+		"colors": "Colors",
+		"background": "Background",
+		"text": "Text",
+		"accent": "Accent"
 	}
 }

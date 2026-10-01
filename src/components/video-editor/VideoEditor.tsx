@@ -384,6 +384,9 @@ export default function VideoEditor() {
 		setNativeCaptureUnavailableModalOpen,
 		handleUploadWebcam,
 		handleClearWebcam,
+		introOutro: exportSettings.introOutro,
+		setIntroOutro: exportSettings.setIntroOutro,
+		previewAspectRatio: previewAspectRatioValue,
 	});
 	return (
 		<EditorShell

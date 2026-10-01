@@ -7,6 +7,7 @@ import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
 import type { useCaptionCommands } from "../hooks/useCaptionCommands";
 import type { useClipRegionCommands } from "../hooks/useClipRegionCommands";
 import type { useZoomRegionCommands } from "../hooks/useZoomRegionCommands";
+import type { IntroOutroSettings } from "../introOutro";
 import { SettingsPanel } from "../SettingsPanel";
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
@@ -37,6 +38,9 @@ type Input = {
 	setNativeCaptureUnavailableModalOpen: Dispatch<SetStateAction<boolean>>;
 	handleUploadWebcam: () => void;
 	handleClearWebcam: () => void;
+	introOutro: IntroOutroSettings;
+	setIntroOutro: (settings: IntroOutroSettings) => void;
+	previewAspectRatio: number;
 };
 
 export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof SettingsPanel> {
@@ -65,6 +69,9 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		setNativeCaptureUnavailableModalOpen,
 		handleUploadWebcam,
 		handleClearWebcam,
+		introOutro,
+		setIntroOutro,
+		previewAspectRatio,
 	} = input;
 	const selectedZoom = timeline.zoomRegions.find(
 		(region) => region.id === timeline.selectedZoomId,
@@ -185,6 +192,9 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		onCropChange: appearance.setCropRegion,
 		aspectRatio,
 		onAspectRatioChange: setAspectRatio,
+		introOutro,
+		onIntroOutroChange: setIntroOutro,
+		previewAspectRatio,
 		selectedAnnotationId: timeline.selectedAnnotationId,
 		annotationRegions: timeline.annotationRegions,
 		autoCaptions: timeline.autoCaptions,

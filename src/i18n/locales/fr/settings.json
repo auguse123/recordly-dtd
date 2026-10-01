@@ -161,7 +161,8 @@
 		"cursor": "Curseur",
 		"webcam": "Webcam",
 		"frame": "Cadre",
-		"crop": "Recadrage"
+		"crop": "Recadrage",
+		"introOutro": "Début / Fin"
 	},
 	"captions": {
 		"selectOnTimeline": "Sélectionnez un sous-titre sur la timeline pour le modifier.",
@@ -258,5 +259,24 @@
 		"title": "Mises à jour",
 		"experimental": "Mises à jour expérimentales",
 		"saveFailed": "Impossible de changer le canal de mise à jour."
+	},
+	"introOutro": {
+		"heading": "Début / Fin",
+		"hint": "Cartons ajoutés au début et à la fin des exports MP4, avec un fondu court.",
+		"reset": "Réinitialiser",
+		"intro": "Début",
+		"outro": "Fin",
+		"title": "Titre",
+		"subtitle": "Sous-titre",
+		"duration": "Durée du carton",
+		"logo": "Logo",
+		"uploadLogo": "Importer un logo",
+		"defaultLogo": "Logo Desk to Desk",
+		"logoInvalid": "Choisis une image (PNG, SVG, JPG).",
+		"logoTooLarge": "Le logo doit faire moins de 2 Mo.",
+		"colors": "Couleurs",
+		"background": "Fond",
+		"text": "Texte",
+		"accent": "Accent"
 	}
 }

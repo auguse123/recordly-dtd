@@ -1,13 +1,11 @@
-import { SettingsSections, SettingsCategory } from "./SettingsSections";
-import { Card, RadioGroup, Radio, Label, Description } from "@heroui/react";
-import { ProgressBar } from "@heroui/react";
-import { ColorControl, ColorPalette } from "@/components/ui/color-picker";
-import { Palette, Trash as Trash2, UploadSimple as Upload } from "@/components/ui/icons";
+import { Card, Description, Label, ProgressBar, Radio, RadioGroup } from "@heroui/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "@/components/ui/toast";
 import minimalCursorUrl from "@/assets/cursors/custom/minimal-cursor.svg";
 import { Button } from "@/components/ui/button";
+import { ChoiceGroup, ChoiceItem } from "@/components/ui/choice-group";
+import { ColorControl, ColorPalette } from "@/components/ui/color-picker";
+import { Palette, Trash as Trash2, UploadSimple as Upload } from "@/components/ui/icons";
 import {
 	Select,
 	SelectContent,
@@ -16,7 +14,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ChoiceGroup, ChoiceItem } from "@/components/ui/choice-group";
+import { toast } from "@/components/ui/toast";
+import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getAssetPath, getRenderableVideoUrl, getWallpaperThumbnailUrl } from "@/lib/assetPath";
 import { cn } from "@/lib/utils";
@@ -39,11 +38,12 @@ import {
 	getMatchingCursorMotionPresetId,
 } from "./cursorMotionPresets";
 import { loadEditorPreferences, saveEditorPreferences } from "./editorPreferences";
+import { IntroOutroSettingsPanel } from "./IntroOutroSettingsPanel";
+import type { IntroOutroSettings } from "./introOutro";
 import { getDefaultBorderRadiusPercent } from "./projectPersistence";
-import { SliderControl } from "./SliderControl";
-import { WallpaperGrid } from "./WallpaperGrid";
-import { useShortcuts } from "@/contexts/ShortcutsContext";
 import { SettingsRow } from "./SettingsRow";
+import { SettingsCategory, SettingsSections } from "./SettingsSections";
+import { SliderControl } from "./SliderControl";
 import type {
 	AnnotationRegion,
 	AnnotationType,
@@ -93,6 +93,7 @@ import {
 	cursorSetAssets,
 	getCursorStyleSizeMultiplier,
 } from "./videoPlayback/uploadedCursorAssets";
+import { WallpaperGrid } from "./WallpaperGrid";
 import { WebcamCropControl } from "./WebcamCropControl";
 import {
 	getCropMatchedWebcamHeightPercent,
@@ -420,6 +421,9 @@ function CursorClickEffectCards({
 
 interface SettingsPanelProps {
 	advanced?: boolean;
+	introOutro?: IntroOutroSettings;
+	onIntroOutroChange?: (settings: IntroOutroSettings) => void;
+	previewAspectRatio?: number;
 	panelMode?: "editor" | "background";
 	activeEffectSection?: EditorEffectSection;
 	selected: string;
@@ -876,6 +880,9 @@ function CursorStylePreview({
 
 export function SettingsPanel({
 	advanced = false,
+	introOutro,
+	onIntroOutroChange,
+	previewAspectRatio = 16 / 9,
 	panelMode = "editor",
 	activeEffectSection: activeEffectSectionProp,
 	selected,
@@ -2776,6 +2783,14 @@ export function SettingsPanel({
 				return captionsSectionContent;
 			case "caption":
 				return captionSectionContent;
+			case "introOutro":
+				return introOutro && onIntroOutroChange ? (
+					<IntroOutroSettingsPanel
+						settings={introOutro}
+						onChange={onIntroOutroChange}
+						aspectRatio={previewAspectRatio}
+					/>
+				) : null;
 			case "cursor":
 				return (
 					<section className="flex flex-col gap-4">

@@ -87,6 +87,7 @@ export function useVideoEditorPresets({
 			exportFormat: exportSettings.exportFormat,
 			gifFrameRate: exportSettings.gifFrameRate,
 			gifLoop: exportSettings.gifLoop,
+			introOutro: exportSettings.introOutro,
 			gifSizePreset: exportSettings.gifSizePreset,
 			autoCaptionSettings: { ...timeline.autoCaptionSettings },
 			whisperExecutablePath,
@@ -155,6 +156,7 @@ export function useVideoEditorPresets({
 			exportSettings.setExportFormat(snapshot.exportFormat);
 			exportSettings.setGifFrameRate(snapshot.gifFrameRate);
 			exportSettings.setGifLoop(snapshot.gifLoop);
+			exportSettings.setIntroOutro(snapshot.introOutro);
 			exportSettings.setGifSizePreset(snapshot.gifSizePreset);
 			timeline.setAutoCaptionSettings({ ...snapshot.autoCaptionSettings });
 			setWhisperExecutablePath(snapshot.whisperExecutablePath);

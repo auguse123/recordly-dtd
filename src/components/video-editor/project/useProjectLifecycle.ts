@@ -193,6 +193,7 @@ export function useProjectLifecycle(input: Input) {
 		exportSettings.setExportFormat(editor.exportFormat);
 		exportSettings.setGifFrameRate(editor.gifFrameRate);
 		exportSettings.setGifLoop(editor.gifLoop);
+		exportSettings.setIntroOutro(editor.introOutro);
 		exportSettings.setGifSizePreset(editor.gifSizePreset);
 		timeline.setSelectedZoomId(null);
 		timeline.setSelectedClipId(null);

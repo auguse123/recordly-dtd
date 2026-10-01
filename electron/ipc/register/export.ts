@@ -13,6 +13,7 @@ import {
 	releaseOwnedExportPath,
 	writeToExportStream,
 } from "../export/exportStream";
+import { joinIntroOutro } from "../export/introOutro";
 import {
 	enqueueNativeVideoExportFrameWrite,
 	enqueueNativeVideoExportFrameWrites,
@@ -1068,6 +1069,59 @@ export function registerExportHandlers() {
 					message: "Failed to save exported video",
 					error: String(error),
 				};
+			}
+		},
+	);
+
+	ipcMain.handle(
+		"apply-intro-outro",
+		async (
+			_event,
+			payload: {
+				tempPath: string;
+				introPng?: Uint8Array | null;
+				outroPng?: Uint8Array | null;
+				durationSec: number;
+			},
+		) => {
+			const tempPath = payload?.tempPath;
+			if (typeof tempPath !== "string" || !isTempPathSafe(tempPath)) {
+				return { success: false, error: "Invalid apply-intro-outro payload" };
+			}
+			if (!isOwnedExportPath(tempPath)) {
+				return { success: false, error: "Temp path is not an app-managed export temp" };
+			}
+			const introPng = payload.introPng instanceof Uint8Array ? payload.introPng : undefined;
+			const outroPng = payload.outroPng instanceof Uint8Array ? payload.outroPng : undefined;
+			if (!introPng && !outroPng) {
+				return { success: true, tempPath };
+			}
+			const durationSec = Number(payload.durationSec);
+			if (!Number.isFinite(durationSec) || durationSec < 0.5 || durationSec > 10) {
+				return { success: false, error: "Invalid intro/outro duration" };
+			}
+
+			let workDir: string | null = null;
+			try {
+				workDir = await fs.mkdtemp(path.join(app.getPath("temp"), "recordly-intro-outro-"));
+				const outputPath = await joinIntroOutro({
+					ffmpegPath: getFfmpegBinaryPath(),
+					mainPath: tempPath,
+					workDir,
+					introPng,
+					outroPng,
+					cardDurationSec: durationSec,
+				});
+				registerOwnedExportPath(outputPath);
+				await removeTemporaryExportFile(tempPath);
+				releaseOwnedExportPath(tempPath);
+				return { success: true, tempPath: outputPath };
+			} catch (error) {
+				console.error("Failed to add intro/outro:", error);
+				if (workDir) {
+					await fs.rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+				}
+				return { success: false, error: String(error) };
 			}
 		},
 	);

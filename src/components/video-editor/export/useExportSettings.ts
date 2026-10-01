@@ -11,6 +11,7 @@ import type {
 } from "@/lib/exporter";
 import { projectCaptionCues } from "../captionTimeline";
 import type { EditorPreferences } from "../editorPreferences";
+import type { IntroOutroSettings } from "../introOutro";
 import type { CaptionCue, ClipRegion } from "../types";
 
 const DEFAULT_MP4_EXPORT_FRAME_RATE: ExportMp4FrameRate = 30;
@@ -38,6 +39,7 @@ export function useExportSettings(
 	const [gifFrameRate, setGifFrameRate] = useState<GifFrameRate>(preferences.gifFrameRate);
 	const [gifLoop, setGifLoop] = useState(preferences.gifLoop);
 	const [gifSizePreset, setGifSizePreset] = useState<GifSizePreset>(preferences.gifSizePreset);
+	const [introOutro, setIntroOutro] = useState<IntroOutroSettings>(preferences.introOutro);
 	const captionSidecarCues = useMemo(
 		() =>
 			projectCaptionCues(autoCaptions, clips)
@@ -74,6 +76,8 @@ export function useExportSettings(
 		setGifLoop,
 		gifSizePreset,
 		setGifSizePreset,
+		introOutro,
+		setIntroOutro,
 		captionSidecarCues,
 	};
 }

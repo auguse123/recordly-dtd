@@ -161,7 +161,8 @@
 		"cursor": "커서",
 		"webcam": "웹캠",
 		"frame": "프레임",
-		"crop": "자르기"
+		"crop": "자르기",
+		"introOutro": "Intro / Outro"
 	},
 	"captions": {
 		"selectOnTimeline": "타임라인에서 자막을 선택하여 편집하세요.",
@@ -258,5 +259,24 @@
 		"title": "업데이트",
 		"experimental": "실험적 업데이트",
 		"saveFailed": "업데이트 채널을 변경하지 못했습니다."
+	},
+	"introOutro": {
+		"heading": "Intro / Outro",
+		"hint": "Title cards added at the start and end of MP4 exports, with a short fade.",
+		"reset": "Reset",
+		"intro": "Intro",
+		"outro": "Outro",
+		"title": "Title",
+		"subtitle": "Subtitle",
+		"duration": "Card duration",
+		"logo": "Logo",
+		"uploadLogo": "Upload logo",
+		"defaultLogo": "Use Desk to Desk logo",
+		"logoInvalid": "Choose an image file (PNG, SVG, JPG).",
+		"logoTooLarge": "Logo must be under 2 MB.",
+		"colors": "Colors",
+		"background": "Background",
+		"text": "Text",
+		"accent": "Accent"
 	}
 }
