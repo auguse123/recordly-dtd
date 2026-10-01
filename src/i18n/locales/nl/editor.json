@@ -211,5 +211,11 @@
 		"expand": "Tijdlijn uitvouwen",
 		"collapse": "Tijdlijn samenvouwen"
 	},
-	"openRecordingsFolder": "Opnamemap openen"
+	"openRecordingsFolder": "Opnamemap openen",
+	"shareKit": {
+		"create": "Share kit (WhatsApp / email)",
+		"busy": "Creating share kit…",
+		"done": "Share kit ready: video, GIF preview and thumbnail.",
+		"failed": "Could not create the share kit."
+	}
 }

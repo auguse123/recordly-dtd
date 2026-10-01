@@ -211,5 +211,11 @@
 		"expand": "Expandir línea de tiempo",
 		"collapse": "Contraer línea de tiempo"
 	},
-	"openRecordingsFolder": "Abrir carpeta de grabaciones"
+	"openRecordingsFolder": "Abrir carpeta de grabaciones",
+	"shareKit": {
+		"create": "Share kit (WhatsApp / email)",
+		"busy": "Creating share kit…",
+		"done": "Share kit ready: video, GIF preview and thumbnail.",
+		"failed": "Could not create the share kit."
+	}
 }

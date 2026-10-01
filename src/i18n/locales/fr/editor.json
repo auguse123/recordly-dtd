@@ -211,5 +211,11 @@
 		"expand": "Développer la timeline",
 		"collapse": "Réduire la timeline"
 	},
-	"openRecordingsFolder": "Ouvrir le dossier des enregistrements"
+	"openRecordingsFolder": "Ouvrir le dossier des enregistrements",
+	"shareKit": {
+		"create": "Kit de partage (WhatsApp / e-mail)",
+		"busy": "Création du kit…",
+		"done": "Kit prêt : vidéo, aperçu GIF et vignette.",
+		"failed": "Impossible de créer le kit de partage."
+	}
 }

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import type { Readable, Writable } from "node:stream";
 import type { SaveDialogOptions } from "electron";
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import {
 	closeExportStream,
 	isOwnedExportPath,
@@ -37,6 +37,7 @@ import {
 	sendNativeVideoExportWriteFrameResult,
 	settleNativeVideoExportWriteFrameRequest,
 } from "../export/native-video";
+import { generateShareKit } from "../export/shareKit";
 import { getFfmpegBinaryPath } from "../ffmpeg/binary";
 import {
 	buildNativeH264StreamExportArgs,
@@ -46,6 +47,7 @@ import {
 	type NativeVideoExportFinishOptions,
 } from "../nativeVideoExport";
 import { isAllowedLocalReadPath, resolveApprovedLocalMediaPath } from "../project/manager";
+import { approvedLocalReadPaths } from "../state";
 import { approveUserPath } from "../utils";
 import {
 	type CaptionSidecarPayload,
@@ -1072,6 +1074,28 @@ export function registerExportHandlers() {
 			}
 		},
 	);
+
+	// Only files the user just saved through the export dialog (approved paths) qualify.
+	ipcMain.handle("generate-share-kit", async (_event, videoPath: unknown) => {
+		if (typeof videoPath !== "string" || path.extname(videoPath).toLowerCase() !== ".mp4") {
+			return { success: false, error: "Le kit de partage nécessite un export MP4." };
+		}
+		const resolved = path.resolve(videoPath);
+		if (!approvedLocalReadPaths.has(resolved)) {
+			return { success: false, error: "Exported file is not an approved path" };
+		}
+		try {
+			const kit = await generateShareKit({
+				ffmpegPath: getFfmpegBinaryPath(),
+				videoPath: resolved,
+			});
+			shell.showItemInFolder(kit.thumbnail);
+			return { success: true, folder: kit.folder };
+		} catch (error) {
+			console.error("Failed to generate share kit:", error);
+			return { success: false, error: String(error) };
+		}
+	});
 
 	ipcMain.handle(
 		"apply-intro-outro",

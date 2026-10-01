@@ -515,6 +515,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	}) => {
 		return ipcRenderer.invoke("apply-intro-outro", payload);
 	},
+	generateShareKit: (videoPath: string) => {
+		return ipcRenderer.invoke("generate-share-kit", videoPath);
+	},
 	getVideoAudioFallbackPaths: (videoPath: string) => {
 		return ipcRenderer.invoke("get-video-audio-fallback-paths", videoPath);
 	},

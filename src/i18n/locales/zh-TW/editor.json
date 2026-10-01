@@ -211,5 +211,11 @@
 		"expand": "展開時間軸",
 		"collapse": "摺疊時間軸"
 	},
-	"openRecordingsFolder": "打開錄製資料夾"
+	"openRecordingsFolder": "打開錄製資料夾",
+	"shareKit": {
+		"create": "Share kit (WhatsApp / email)",
+		"busy": "Creating share kit…",
+		"done": "Share kit ready: video, GIF preview and thumbnail.",
+		"failed": "Could not create the share kit."
+	}
 }

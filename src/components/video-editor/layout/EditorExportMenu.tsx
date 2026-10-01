@@ -1,13 +1,11 @@
+import { Card, ProgressBar } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { CloudArrowUp } from "@/components/ui/icons";
-import { CloudShareButton } from "../cloud/CloudShareButton";
-import { Card } from "@heroui/react";
-import { ProgressBar } from "@heroui/react";
-import { DownloadSimple as Download } from "@/components/ui/icons";
-import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { CloudArrowUp, DownloadSimple as Download } from "@/components/ui/icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "@/components/ui/toast";
 import type { useI18n } from "@/contexts/I18nContext";
+import { CloudShareButton } from "../cloud/CloudShareButton";
 import { ExportSettingsMenu } from "../ExportSettingsMenu";
 import type { useExportDimensions } from "../export/useExportDimensions";
 import type { useExportSession } from "../export/useExportSession";
@@ -15,7 +13,7 @@ import type { useExportSettings } from "../export/useExportSettings";
 import type { useExportStatusViewModel } from "../export/useExportStatusViewModel";
 
 type Props = {
- projectPath?: string | null;
+	projectPath?: string | null;
 	t: ReturnType<typeof useI18n>["t"];
 	exportSettings: ReturnType<typeof useExportSettings>;
 	exportSession: ReturnType<typeof useExportSession>;
@@ -41,6 +39,7 @@ type Props = {
 
 export function EditorExportMenu(props: Props) {
 	const [shareOpen, setShareOpen] = useState(false);
+	const [shareKitBusy, setShareKitBusy] = useState(false);
 	useEffect(() => {
 		if (props.shareRequestNonce > 0) setShareOpen(true);
 	}, [props.shareRequestNonce]);
@@ -288,7 +287,49 @@ export function EditorExportMenu(props: Props) {
 							<p className="mt-3 truncate text-xs text-muted-foreground/70">
 								{exportedFilePath.split(/[\\/]/).pop()}
 							</p>
-							<div className="mt-4 flex gap-2">
+							{/\.mp4$/i.test(exportedFilePath) ? (
+								<Button
+									type="button"
+									variant="secondary"
+									disabled={shareKitBusy}
+									onClick={async () => {
+										setShareKitBusy(true);
+										try {
+											const result =
+												await window.electronAPI.generateShareKit(
+													exportedFilePath,
+												);
+											if (result.success) {
+												toast.success(
+													t(
+														"editor.shareKit.done",
+														"Share kit ready: video, GIF preview and thumbnail.",
+													),
+												);
+											} else {
+												toast.error(
+													result.error ||
+														t(
+															"editor.shareKit.failed",
+															"Could not create the share kit.",
+														),
+												);
+											}
+										} finally {
+											setShareKitBusy(false);
+										}
+									}}
+									className="mt-4 h-8 w-full text-xs"
+								>
+									{shareKitBusy
+										? t("editor.shareKit.busy", "Creating share kit…")
+										: t(
+												"editor.shareKit.create",
+												"Share kit (WhatsApp / email)",
+											)}
+								</Button>
+							) : null}
+							<div className="mt-2 flex gap-2">
 								<Button
 									type="button"
 									onClick={revealExportedFile}
@@ -360,7 +401,7 @@ export function EditorExportMenu(props: Props) {
 			</Popover>
 			{shareOpen && (
 				<CloudShareButton
- projectPath={props.projectPath}
+					projectPath={props.projectPath}
 					hideTrigger
 					open={shareOpen}
 					onOpenChange={setShareOpen}

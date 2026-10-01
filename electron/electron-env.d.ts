@@ -589,6 +589,11 @@ interface Window {
 			outroPng?: Uint8Array | null;
 			durationSec: number;
 		}) => Promise<{ success: boolean; tempPath?: string; error?: string }>;
+		generateShareKit: (videoPath: string) => Promise<{
+			success: boolean;
+			folder?: string;
+			error?: string;
+		}>;
 		getVideoAudioFallbackPaths: (videoPath: string) => Promise<{
 			success: boolean;
 			paths: string[];

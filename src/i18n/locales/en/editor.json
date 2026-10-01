@@ -211,5 +211,11 @@
 		"expand": "Expand Timeline",
 		"collapse": "Collapse Timeline"
 	},
-	"openRecordingsFolder": "Open recordings folder"
+	"openRecordingsFolder": "Open recordings folder",
+	"shareKit": {
+		"create": "Share kit (WhatsApp / email)",
+		"busy": "Creating share kit…",
+		"done": "Share kit ready: video, GIF preview and thumbnail.",
+		"failed": "Could not create the share kit."
+	}
 }
