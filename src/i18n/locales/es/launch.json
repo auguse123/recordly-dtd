@@ -27,6 +27,7 @@
 		"noSourcesFound": "No se encontraron fuentes",
 		"microphone": "Micrófono",
 		"turnOffMicrophone": "Desactivar micrófono",
+		"voiceDenoise": "Voice cleanup",
 		"selectMicToEnable": "Selecciona un micrófono para activar",
 		"noMicrophonesFound": "No se encontraron micrófonos",
 		"webcam": "Cámara",

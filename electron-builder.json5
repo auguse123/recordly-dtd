@@ -1,7 +1,7 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "dev.recordly.app",
+  "appId": "dev.recordly.app.dtd",
   "electronUpdaterCompatibility": ">=2.16",
   "asar": true,
   "asarUnpack": [
@@ -10,7 +10,7 @@
     "node_modules/uiohook-napi/**",
     "electron/native/bin/**"
   ],
-  "productName": "Recordly",
+  "productName": "Recordly DTD",
   "protocols": [
     {
       "name": "Recordly authentication",
@@ -49,28 +49,17 @@
       "to": "assets/wallpapers"
     }
   ],
-  "publish": [
-    {
-      "provider": "github",
-      "owner": "webadderall",
-      "repo": "Recordly",
-      "tagNamePrefix": "v",
-      "publishAutoUpdate": true
-    }
-  ],
+  "publish": null,
 
   "mac": {
     "hardenedRuntime": true,
     "entitlements": "build/entitlements.mac.plist",
     "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+    "identity": null,
     "target": [
       {
-        "target": "dmg",
-        "arch": ["x64", "arm64"]
-      },
-      {
-        "target": "zip",
-        "arch": ["x64", "arm64"]
+        "target": "dir",
+        "arch": ["arm64"]
       }
     ],
     "icon": "icons/icons/mac/icon.icns",

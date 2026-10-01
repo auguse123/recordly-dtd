@@ -127,6 +127,7 @@ function LaunchWindowContent() {
 	} = useWebcamPreviewOverlay({
 		webcamEnabled,
 		webcamDeviceId,
+		recording,
 		showWebcamControls,
 		webcamPopoverOpen: openId === "webcam",
 		hudOverlayMousePassthroughSupported,

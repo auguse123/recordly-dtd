@@ -27,6 +27,7 @@
 		"noSourcesFound": "Источники изображения не найдены",
 		"microphone": "Микрофон",
 		"turnOffMicrophone": "Выключить микрофон",
+		"voiceDenoise": "Voice cleanup",
 		"selectMicToEnable": "Выберите микрофон для записи звука",
 		"noMicrophonesFound": "Нет доступных микрофонов",
 		"webcam": "Веб-камера",

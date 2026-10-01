@@ -41,13 +41,19 @@ describe("ScreenCaptureKitRecorder resume timing", () => {
 		);
 	});
 
-	it("drops non-monotonic video and audio samples", () => {
+	it("drops non-monotonic video samples", () => {
 		expect(recorderSource).toContain(
 			"CMTimeCompare(presentationTime, lastVideoPresentationTime) <= 0",
 		);
-		expect(recorderSource).toContain(
-			"CMTimeCompare(presentationTime, lastPresentationTime) > 0",
-		);
+	});
+
+	it("keeps audio on a continuous sample timeline", () => {
+		// Lost audio is replaced by silence and late audio is skipped, so
+		// AVAssetWriter can never collapse a gap and drift the track.
+		expect(recorderSource).toContain("if deficit > tolerance {");
+		expect(recorderSource).toContain("} else if deficit < -2 * tolerance {");
+		expect(recorderSource).toContain("presentationTimeStamp: timeline.endTime");
+		expect(recorderSource).toContain("appendSilence(to: timeline, until: videoEndTime)");
 	});
 });
 

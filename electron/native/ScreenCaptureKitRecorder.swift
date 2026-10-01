@@ -22,6 +22,41 @@ struct CaptureConfig: Codable {
 	let excludedProcessIds: [Int32]?
 }
 
+/// Keeps one audio track on a continuous sample timeline anchored to the video's
+/// first frame.  AVAssetWriter packs audio samples back to back and ignores gaps
+/// in presentation timestamps, so every buffer that is dropped (busy encoder,
+/// late delivery) used to pull the rest of the voice earlier, producing a
+/// progressive audio/video drift.  The timeline fills such gaps with silence and
+/// queues buffers while the encoder is busy instead of dropping them.
+final class AudioTrackTimeline {
+	let label: String
+	let input: AVAssetWriterInput
+	var sampleRate: Double = 0
+	var writtenFrames: Int64 = 0
+	var formatDescription: CMAudioFormatDescription?
+	var pending: [CMSampleBuffer] = []
+	var insertedSilenceFrames: Int64 = 0
+	var skippedFrames: Int64 = 0
+	var overflowDroppedFrames: Int64 = 0
+
+	init(label: String, input: AVAssetWriterInput) {
+		self.label = label
+		self.input = input
+	}
+
+	var endTime: CMTime {
+		guard sampleRate > 0 else { return .invalid }
+		return CMTime(value: writtenFrames, timescale: CMTimeScale(sampleRate))
+	}
+}
+
+/// Gaps or overlaps smaller than this are tolerated (timestamp jitter).
+let audioTimelineTolerance: Double = 0.02
+/// Upper bound on buffers queued while an encoder is busy (~10 s of audio).
+let maxPendingAudioBuffers = 1000
+/// Silence is inserted in chunks of at most this many seconds.
+let maxSilenceChunkSeconds: Double = 0.5
+
 let targetCaptureFPS = 60
 let maxInlineAudioTailExtension = CMTime(seconds: 2.0, preferredTimescale: 600)
 /// How long finalization waits for a backed-up encoder queue before giving up on
@@ -52,13 +87,12 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 	private var firstSampleTime: CMTime = .zero
 	private var firstSystemAudioSampleTime: CMTime?
 	private var firstMicrophoneSampleTime: CMTime?
-	private var lastSystemAudioPresentationTime: CMTime = .invalid
-	private var lastMicrophonePresentationTime: CMTime = .invalid
+	private var systemAudioTimeline: AudioTrackTimeline?
+	private var microphoneTimeline: AudioTrackTimeline?
+	private var inlineAudioTimeline: AudioTrackTimeline?
 	private var lastSampleBuffer: CMSampleBuffer?
 	private var lastVideoPresentationTime: CMTime = .zero
 	private var lastVideoDuration: CMTime = .zero
-	private var lastInlineAudioPresentationTime: CMTime = .invalid
-	private var lastInlineAudioDuration: CMTime = .zero
 	private var isRecording = false
 	private var isPaused = false
 	private var pauseStartedHostTime: CMTime?
@@ -206,8 +240,9 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		microphoneOutputURL = nil
 		firstSystemAudioSampleTime = nil
 		firstMicrophoneSampleTime = nil
-		lastSystemAudioPresentationTime = .invalid
-		lastMicrophonePresentationTime = .invalid
+		systemAudioTimeline = nil
+		microphoneTimeline = nil
+		inlineAudioTimeline = nil
 
 		guard let assistant = AVOutputSettingsAssistant(preset: .preset3840x2160) else {
 			throw NSError(domain: "RecordlyCapture", code: 5, userInfo: [NSLocalizedDescriptionKey: "Unable to create output settings assistant"])
@@ -268,6 +303,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			if assetWriter.canAdd(inlineAudio) {
 				assetWriter.add(inlineAudio)
 				self.inlineAudioInput = inlineAudio
+				self.inlineAudioTimeline = AudioTrackTimeline(label: "inline", input: inlineAudio)
 			}
 		}
 
@@ -288,6 +324,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			systemAudioWriter.add(systemAudioInput)
 			self.systemAudioWriter = systemAudioWriter
 			self.systemAudioInput = systemAudioInput
+			self.systemAudioTimeline = AudioTrackTimeline(label: "system", input: systemAudioInput)
 
 			guard systemAudioWriter.startWriting() else {
 				throw NSError(domain: "RecordlyCapture", code: 13, userInfo: [NSLocalizedDescriptionKey: systemAudioWriter.error?.localizedDescription ?? "Unable to start system audio writing"])
@@ -314,6 +351,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			microphoneWriter.add(microphoneInput)
 			self.microphoneOnlyWriter = microphoneWriter
 			self.microphoneOnlyInput = microphoneInput
+			self.microphoneTimeline = AudioTrackTimeline(label: "microphone", input: microphoneInput)
 
 			guard microphoneWriter.startWriting() else {
 				throw NSError(domain: "RecordlyCapture", code: 16, userInfo: [NSLocalizedDescriptionKey: microphoneWriter.error?.localizedDescription ?? "Unable to start microphone audio writing"])
@@ -447,22 +485,22 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 			  let presentationTime = adjustedPresentationTime(for: sampleBuffer, outputType: outputType) else { return }
 
 		if outputType == .audio {
-			guard let systemAudioInput else { return }
-			appendAudioSampleBuffer(sampleBuffer, to: systemAudioInput, of: systemAudioWriter, firstSampleTime: &firstSystemAudioSampleTime, lastPresentationTime: &lastSystemAudioPresentationTime, presentationTime: presentationTime)
+			guard let systemAudioTimeline else { return }
+			appendAudioSampleBuffer(sampleBuffer, to: systemAudioTimeline, of: systemAudioWriter, firstSampleTime: &firstSystemAudioSampleTime, presentationTime: presentationTime)
 			// Also write system audio to the inline video track
-			if let inlineAudioInput, inlineAudioInput.isReadyForMoreMediaData {
-				appendAudioSampleBuffer(sampleBuffer, to: inlineAudioInput, of: assetWriter, firstSampleTime: &firstInlineAudioSampleTime, lastPresentationTime: &lastInlineAudioPresentationTime, presentationTime: presentationTime)
+			if let inlineAudioTimeline {
+				appendAudioSampleBuffer(sampleBuffer, to: inlineAudioTimeline, of: assetWriter, firstSampleTime: &firstInlineAudioSampleTime, presentationTime: presentationTime)
 			}
 			return
 		}
 
 		if outputType.rawValue == microphoneOutputTypeRawValue {
-			if let microphoneOnlyInput {
-				appendAudioSampleBuffer(sampleBuffer, to: microphoneOnlyInput, of: microphoneOnlyWriter, firstSampleTime: &firstMicrophoneSampleTime, lastPresentationTime: &lastMicrophonePresentationTime, presentationTime: presentationTime)
+			if let microphoneTimeline {
+				appendAudioSampleBuffer(sampleBuffer, to: microphoneTimeline, of: microphoneOnlyWriter, firstSampleTime: &firstMicrophoneSampleTime, presentationTime: presentationTime)
 			}
 			// Write mic to inline video track only if there's no system audio (avoids double-writing)
-			if !capturesSystemAudio, let inlineAudioInput, inlineAudioInput.isReadyForMoreMediaData {
-				appendAudioSampleBuffer(sampleBuffer, to: inlineAudioInput, of: assetWriter, firstSampleTime: &firstInlineAudioSampleTime, lastPresentationTime: &lastInlineAudioPresentationTime, presentationTime: presentationTime)
+			if !capturesSystemAudio, let inlineAudioTimeline {
+				appendAudioSampleBuffer(sampleBuffer, to: inlineAudioTimeline, of: assetWriter, firstSampleTime: &firstInlineAudioSampleTime, presentationTime: presentationTime)
 			}
 			return
 		}
@@ -610,6 +648,16 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		// writer is no longer in the `.writing` state (a mid-capture failure, for
 		// example a full disk), which would abort the helper the same way.
 		let videoEndTime = lastVideoPresentationTime + (lastSampleBuffer.map { frameDuration(for: $0) } ?? .zero)
+		// Pad every audio track with silence up to the end of the video and drain
+		// buffers still queued behind a busy encoder, so all files share one length.
+		for (timeline, writer) in [(inlineAudioTimeline, assetWriter), (systemAudioTimeline, systemAudioWriter), (microphoneTimeline, microphoneOnlyWriter)] {
+			guard let timeline else { continue }
+			if writer?.status == .writing, frameCount > 0 {
+				appendSilence(to: timeline, until: videoEndTime)
+			}
+			await drainPendingAudio(timeline, of: writer)
+			logAudioTimeline(timeline)
+		}
 		let endTime = resolvedCaptureEndTime(videoEndTime: videoEndTime)
 		if let assetWriter, assetWriter.status == .writing {
 			assetWriter.endSession(atSourceTime: endTime)
@@ -655,14 +703,13 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		firstSampleTime = .zero
 		firstSystemAudioSampleTime = nil
 		firstMicrophoneSampleTime = nil
-		lastSystemAudioPresentationTime = .invalid
-		lastMicrophonePresentationTime = .invalid
+		systemAudioTimeline = nil
+		microphoneTimeline = nil
+		inlineAudioTimeline = nil
 		firstInlineAudioSampleTime = nil
 		lastSampleBuffer = nil
 		lastVideoPresentationTime = .zero
 		lastVideoDuration = .zero
-		lastInlineAudioPresentationTime = .invalid
-		lastInlineAudioDuration = .zero
 		frameCount = 0
 		isPaused = false
 		pauseStartedHostTime = nil
@@ -768,15 +815,11 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 	}
 
 	private func latestInlineAudioEndTime() -> CMTime {
-		guard lastInlineAudioPresentationTime.isValid else {
+		guard let inlineAudioTimeline, inlineAudioTimeline.writtenFrames > 0 else {
 			return .invalid
 		}
 
-		if lastInlineAudioDuration.isValid && lastInlineAudioDuration > .zero {
-			return lastInlineAudioPresentationTime + lastInlineAudioDuration
-		}
-
-		return lastInlineAudioPresentationTime
+		return inlineAudioTimeline.endTime
 	}
 
 	private func resolvedCaptureEndTime(videoEndTime: CMTime) -> CMTime {
@@ -795,28 +838,141 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		return videoEndTime + CMTimeMinimum(tailExtension, maxInlineAudioTailExtension)
 	}
 
-	private func appendAudioSampleBuffer(_ sampleBuffer: CMSampleBuffer, to input: AVAssetWriterInput, of writer: AVAssetWriter?, firstSampleTime: inout CMTime?, lastPresentationTime: inout CMTime, presentationTime: CMTime) {
+	private func appendAudioSampleBuffer(_ sampleBuffer: CMSampleBuffer, to timeline: AudioTrackTimeline, of writer: AVAssetWriter?, firstSampleTime: inout CMTime?, presentationTime: CMTime) {
 		// A writer that failed mid-capture (a full disk, say) raises on every
 		// further append, which would abort the helper and lose the whole file.
-		guard writer?.status == .writing, input.isReadyForMoreMediaData else { return }
-		guard !lastPresentationTime.isValid || CMTimeCompare(presentationTime, lastPresentationTime) > 0 else { return }
+		guard writer?.status == .writing else { return }
+		guard let format = CMSampleBufferGetFormatDescription(sampleBuffer),
+			  let streamDescription = CMAudioFormatDescriptionGetStreamBasicDescription(format)?.pointee,
+			  streamDescription.mSampleRate > 0 else { return }
+		let bufferFrames = Int64(CMSampleBufferGetNumSamples(sampleBuffer))
+		guard bufferFrames > 0 else { return }
 
+		if timeline.sampleRate == 0 {
+			timeline.sampleRate = streamDescription.mSampleRate
+		}
+		timeline.formatDescription = format
 		if firstSampleTime == nil {
 			firstSampleTime = presentationTime
 		}
 
-		// presentationTime is already relative to the video's first frame
-		// (computed by adjustedPresentationTime), so use it directly.
-		let timing = CMSampleTimingInfo(duration: sampleBuffer.duration, presentationTimeStamp: presentationTime, decodeTimeStamp: sampleBuffer.decodeTimeStamp)
+		// presentationTime is relative to the video's first frame (computed by
+		// adjustedPresentationTime). Compare it with how much audio this track has
+		// actually written: a positive difference is lost audio, filled with silence
+		// so the following samples stay where they belong.
+		let rate = timeline.sampleRate
+		let tolerance = Int64(rate * audioTimelineTolerance)
+		let targetFrame = Int64((presentationTime.seconds * rate).rounded())
+		let deficit = targetFrame - timeline.writtenFrames
+		if deficit > tolerance {
+			appendSilence(to: timeline, until: CMTime(value: targetFrame, timescale: CMTimeScale(rate)))
+		} else if deficit < -2 * tolerance {
+			// This track is already ahead of the clock (late duplicate or clock
+			// skew): skip the buffer rather than push everything after it later.
+			timeline.skippedFrames += bufferFrames
+			flushPendingAudio(timeline, of: writer)
+			return
+		}
+
+		let timelineFrames = streamDescription.mSampleRate == rate
+			? bufferFrames
+			: Int64((Double(bufferFrames) * rate / streamDescription.mSampleRate).rounded())
+		let timing = CMSampleTimingInfo(
+			duration: CMTime(value: timelineFrames, timescale: CMTimeScale(rate)),
+			presentationTimeStamp: timeline.endTime,
+			decodeTimeStamp: .invalid
+		)
 		if let retimedSampleBuffer = try? CMSampleBuffer(copying: sampleBuffer, withNewTiming: [timing]) {
-			let appended = input.append(retimedSampleBuffer)
-			if appended {
-				lastPresentationTime = presentationTime
-				if input === inlineAudioInput {
-					lastInlineAudioDuration = sampleBuffer.duration
-				}
+			enqueueAudio(retimedSampleBuffer, frames: timelineFrames, to: timeline)
+		}
+		flushPendingAudio(timeline, of: writer)
+	}
+
+	/// Queues a buffer that already carries its timeline timestamp. Frames only
+	/// count as written once queued, so an overflow becomes a gap that the next
+	/// buffer fills with silence instead of shifting the audio.
+	private func enqueueAudio(_ sampleBuffer: CMSampleBuffer, frames: Int64, to timeline: AudioTrackTimeline) {
+		guard timeline.pending.count < maxPendingAudioBuffers else {
+			timeline.overflowDroppedFrames += frames
+			return
+		}
+		timeline.pending.append(sampleBuffer)
+		timeline.writtenFrames += frames
+	}
+
+	private func appendSilence(to timeline: AudioTrackTimeline, until endTime: CMTime) {
+		guard timeline.sampleRate > 0, let format = timeline.formatDescription else { return }
+		let rate = timeline.sampleRate
+		let targetFrame = Int64((endTime.seconds * rate).rounded())
+		let maxChunk = Int64(rate * maxSilenceChunkSeconds)
+		while timeline.writtenFrames < targetFrame, timeline.pending.count < maxPendingAudioBuffers {
+			let frames = min(targetFrame - timeline.writtenFrames, maxChunk)
+			guard let silence = Self.makeSilenceBuffer(format: format, frames: Int(frames), presentationTime: timeline.endTime) else { return }
+			enqueueAudio(silence, frames: frames, to: timeline)
+			timeline.insertedSilenceFrames += frames
+		}
+	}
+
+	private func flushPendingAudio(_ timeline: AudioTrackTimeline, of writer: AVAssetWriter?) {
+		while let next = timeline.pending.first,
+			  writer?.status == .writing,
+			  timeline.input.isReadyForMoreMediaData {
+			timeline.pending.removeFirst()
+			if !timeline.input.append(next) {
+				timeline.pending.removeAll()
+				return
 			}
 		}
+	}
+
+	private func drainPendingAudio(_ timeline: AudioTrackTimeline, of writer: AVAssetWriter?) async {
+		while !timeline.pending.isEmpty {
+			guard await waitUntilReady(timeline.input, of: writer) else { return }
+			flushPendingAudio(timeline, of: writer)
+		}
+	}
+
+	private func logAudioTimeline(_ timeline: AudioTrackTimeline) {
+		guard timeline.sampleRate > 0 else { return }
+		let ms = { (frames: Int64) in Int((Double(frames) / timeline.sampleRate * 1000).rounded()) }
+		fputs("AUDIO_TIMELINE \(timeline.label): duration=\(ms(timeline.writtenFrames))ms silence=\(ms(timeline.insertedSilenceFrames))ms skipped=\(ms(timeline.skippedFrames))ms overflow=\(ms(timeline.overflowDroppedFrames))ms pending=\(timeline.pending.count)\n", stderr)
+		fflush(stderr)
+	}
+
+	static func makeSilenceBuffer(format: CMAudioFormatDescription, frames: Int, presentationTime: CMTime) -> CMSampleBuffer? {
+		guard frames > 0,
+			  let description = CMAudioFormatDescriptionGetStreamBasicDescription(format)?.pointee,
+			  description.mFormatID == kAudioFormatLinearPCM,
+			  description.mBytesPerFrame > 0 else { return nil }
+		let isNonInterleaved = description.mFormatFlags & kAudioFormatFlagIsNonInterleaved != 0
+		let channelBuffers = isNonInterleaved ? Int(description.mChannelsPerFrame) : 1
+		let byteCount = frames * Int(description.mBytesPerFrame) * channelBuffers
+
+		var blockBuffer: CMBlockBuffer?
+		guard CMBlockBufferCreateWithMemoryBlock(
+			allocator: kCFAllocatorDefault,
+			memoryBlock: nil,
+			blockLength: byteCount,
+			blockAllocator: kCFAllocatorDefault,
+			customBlockSource: nil,
+			offsetToData: 0,
+			dataLength: byteCount,
+			flags: kCMBlockBufferAssureMemoryNowFlag,
+			blockBufferOut: &blockBuffer
+		) == kCMBlockBufferNoErr, let blockBuffer else { return nil }
+		guard CMBlockBufferFillDataBytes(with: 0, blockBuffer: blockBuffer, offsetIntoDestination: 0, dataLength: byteCount) == kCMBlockBufferNoErr else { return nil }
+
+		var sampleBuffer: CMSampleBuffer?
+		guard CMAudioSampleBufferCreateReadyWithPacketDescriptions(
+			allocator: kCFAllocatorDefault,
+			dataBuffer: blockBuffer,
+			formatDescription: format,
+			sampleCount: frames,
+			presentationTimeStamp: presentationTime,
+			packetDescriptions: nil,
+			sampleBufferOut: &sampleBuffer
+		) == noErr else { return nil }
+		return sampleBuffer
 	}
 
 	private static func audioOutputSettings(bitRate: Int) -> [String: Any] {

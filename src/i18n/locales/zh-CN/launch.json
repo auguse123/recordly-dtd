@@ -27,6 +27,7 @@
 		"noSourcesFound": "未找到源",
 		"microphone": "麦克风",
 		"turnOffMicrophone": "关闭麦克风",
+		"voiceDenoise": "Voice cleanup",
 		"selectMicToEnable": "选择一个麦克风以启用",
 		"noMicrophonesFound": "未找到麦克风",
 		"webcam": "摄像头",

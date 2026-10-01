@@ -1,9 +1,9 @@
-import { MicrophoneSlashIcon, SpeakerHighIcon, SpeakerXIcon } from "@/components/ui/icons";
+import { MagicWand, MicrophoneSlashIcon, SpeakerHighIcon, SpeakerXIcon } from "@/components/ui/icons";
 import { useScopedT } from "@/contexts/I18nContext";
 import { DropdownItem, HudPopover, MicDeviceRow } from "./PopoverScaffold";
 import { useLaunchPopoverCoordinator } from "./LaunchPopoverCoordinator";
 import type { DeviceOption } from "./launchPopoverTypes";
-import type { ReactElement } from "react";
+import { type ReactElement, useEffect, useState } from "react";
 import styles from "../LaunchWindow.module.css";
 
 const POPOVER_ID = "mic";
@@ -34,6 +34,24 @@ export function MicPopover({
 	const t = useScopedT("launch");
 	const { isOpen, requestOpen, requestClose } = useLaunchPopoverCoordinator();
 	const open = isOpen(POPOVER_ID);
+	const [voiceDenoiseEnabled, setVoiceDenoiseEnabled] = useState(true);
+
+	useEffect(() => {
+		if (!open) return;
+		let cancelled = false;
+		void window.electronAPI.getRecordingPreferences().then((prefs) => {
+			if (!cancelled) setVoiceDenoiseEnabled(prefs.voiceDenoiseEnabled !== false);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [open]);
+
+	const toggleVoiceDenoise = () => {
+		const next = !voiceDenoiseEnabled;
+		setVoiceDenoiseEnabled(next);
+		void window.electronAPI.setRecordingPreferences({ voiceDenoiseEnabled: next });
+	};
 
 	return (
 		<HudPopover
@@ -63,6 +81,15 @@ export function MicPopover({
 					? t("recording.disableSystemAudio")
 					: t("recording.enableSystemAudio")}
 			</DropdownItem>
+			{microphoneEnabled && (
+				<DropdownItem
+					icon={<MagicWand size={16} />}
+					selected={voiceDenoiseEnabled}
+					onClick={toggleVoiceDenoise}
+				>
+					{t("recording.voiceDenoise")}
+				</DropdownItem>
+			)}
 			{microphoneEnabled && (
 				<DropdownItem
 					icon={<MicrophoneSlashIcon size={16} />}

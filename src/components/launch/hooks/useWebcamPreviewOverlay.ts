@@ -3,15 +3,26 @@ import { canShowFloatingWebcamPreview } from "../floatingWebcamPreview";
 
 const WEBCAM_PREVIEW_DRAG_THRESHOLD = 6;
 const DEFAULT_WEBCAM_PREVIEW_OFFSET = { x: 0, y: 0 };
+const FLOATING_PREVIEW_STORAGE_KEY = "recordly.showFloatingWebcamPreview";
+
+function readStoredFloatingPreviewPreference(): boolean {
+	try {
+		return window.localStorage.getItem(FLOATING_PREVIEW_STORAGE_KEY) !== "false";
+	} catch {
+		return true;
+	}
+}
 
 export function useWebcamPreviewOverlay({
 	webcamEnabled,
 	webcamDeviceId,
+	recording,
 	showWebcamControls,
 	webcamPopoverOpen,
 	hudOverlayMousePassthroughSupported,
 }: {
 	webcamEnabled: boolean;
+	recording: boolean;
 	webcamDeviceId?: string;
 	showWebcamControls: boolean;
 	webcamPopoverOpen: boolean;
@@ -38,7 +49,19 @@ export function useWebcamPreviewOverlay({
 			unsubscribe();
 		};
 	}, []);
-	const [showFloatingWebcamPreview, setShowFloatingWebcamPreview] = useState(true);
+	const [showFloatingWebcamPreview, setShowFloatingWebcamPreview] = useState(
+		readStoredFloatingPreviewPreference,
+	);
+	useEffect(() => {
+		try {
+			window.localStorage.setItem(
+				FLOATING_PREVIEW_STORAGE_KEY,
+				String(showFloatingWebcamPreview),
+			);
+		} catch {
+			/* Preference persistence is best effort. */
+		}
+	}, [showFloatingWebcamPreview]);
 	const [webcamPreviewOffset, setWebcamPreviewOffset] = useState(DEFAULT_WEBCAM_PREVIEW_OFFSET);
 	const webcamPreviewOffsetRef = useRef(DEFAULT_WEBCAM_PREVIEW_OFFSET);
 	const webcamPreviewRef = useRef<HTMLVideoElement | null>(null);
@@ -60,8 +83,12 @@ export function useWebcamPreviewOverlay({
 		dragging: boolean;
 	} | null>(null);
 	const isWebcamPreviewDraggingRef = useRef(false);
+	// The floating bubble is only shown while a recording is running. Before that,
+	// framing is checked in the webcam popover, so an idle HUD never holds the
+	// camera open.
 	const showRecordingWebcamPreview =
 		webcamEnabled &&
+		recording &&
 		canShowFloatingWebcamPreview(
 			showFloatingWebcamPreview,
 			hudOverlayMousePassthroughSupported,
@@ -80,7 +107,6 @@ export function useWebcamPreviewOverlay({
 			}
 			webcamPreviewDragStartRef.current = null;
 			isWebcamPreviewDraggingRef.current = false;
-			setShowFloatingWebcamPreview(true);
 		}
 	}, [webcamEnabled]);
 

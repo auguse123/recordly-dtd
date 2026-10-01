@@ -146,6 +146,7 @@ export function registerSettingsHandlers() {
 				webcamEnabled: parsed.webcamEnabled === true,
 				webcamDeviceId:
 					typeof parsed.webcamDeviceId === "string" ? parsed.webcamDeviceId : undefined,
+				voiceDenoiseEnabled: parsed.voiceDenoiseEnabled !== false,
 			};
 		} catch {
 			return {
@@ -155,6 +156,7 @@ export function registerSettingsHandlers() {
 				systemAudioEnabled: false,
 				webcamEnabled: false,
 				webcamDeviceId: undefined,
+				voiceDenoiseEnabled: true,
 			};
 		}
 	});

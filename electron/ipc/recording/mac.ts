@@ -1,5 +1,6 @@
-import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import { type ChildProcessWithoutNullStreams, execFile } from "node:child_process";
 import fs from "node:fs/promises";
+import { promisify } from "node:util";
 import { BrowserWindow } from "electron";
 import {
 	persistPendingCursorTelemetry,
@@ -23,7 +24,9 @@ import {
 	setNativeCaptureTargetPath,
 	setNativeScreenRecordingActive,
 } from "../state";
-import { moveFileWithOverwrite } from "../utils";
+import { RECORDINGS_SETTINGS_FILE } from "../constants";
+import { getFfmpegBinaryPath } from "../ffmpeg/binary";
+import { moveFileWithOverwrite, parseJsonWithByteOrderMark } from "../utils";
 import {
 	getFileSizeIfPresent,
 	recordNativeCaptureDiagnostics,
@@ -183,9 +186,77 @@ export async function muxNativeMacRecordingWithAudio(
 			if (stat.size > 0 && microphonePath !== finalMicPath) {
 				await moveFileWithOverwrite(microphonePath, finalMicPath);
 			}
+			if (stat.size > 0 && (await isVoiceDenoiseEnabled())) {
+				await denoiseMicrophoneSidecar(finalMicPath);
+			}
 		} catch (err) {
 			console.error(`[mac-mux] Failed to handle mic audio:`, err);
 		}
+	}
+}
+
+const execFileAsync = promisify(execFile);
+
+// Same chain as the manual "Réparer le son" script: rumble cut, broadband noise
+// reduction, then loudness normalisation to a podcast-style -16 LUFS.
+const VOICE_DENOISE_FILTER = "highpass=f=80,afftdn=nr=12:nf=-45:tn=1,loudnorm=I=-16:TP=-1.5:LRA=11";
+
+async function isVoiceDenoiseEnabled() {
+	try {
+		const content = await fs.readFile(RECORDINGS_SETTINGS_FILE, "utf-8");
+		const parsed = parseJsonWithByteOrderMark<Record<string, unknown>>(content);
+		return parsed?.voiceDenoiseEnabled !== false;
+	} catch {
+		return true;
+	}
+}
+
+/**
+ * Cleans the microphone sidecar in place. The untouched capture is kept next to
+ * it as `<stem>.original.mic.m4a` (still part of the recording bundle, but never
+ * picked up as the mic track), so a bad pass can always be undone by hand.
+ */
+async function denoiseMicrophoneSidecar(micPath: string) {
+	const match = /\.mic(\.[^./\\]+)$/i.exec(micPath);
+	if (!match) return;
+	const stem = micPath.slice(0, match.index);
+	const originalPath = `${stem}.original.mic${match[1]}`;
+	const tempPath = `${stem}.denoising.m4a`;
+	const startedAt = Date.now();
+	try {
+		await execFileAsync(
+			getFfmpegBinaryPath(),
+			[
+				"-y",
+				"-hide_banner",
+				"-loglevel",
+				"error",
+				"-i",
+				micPath,
+				"-vn",
+				"-af",
+				VOICE_DENOISE_FILTER,
+				// loudnorm upsamples internally; bring it back to the capture rate.
+				"-ar",
+				"48000",
+				"-c:a",
+				"aac",
+				"-b:a",
+				"192k",
+				"-movflags",
+				"+faststart",
+				tempPath,
+			],
+			{ maxBuffer: 16 * 1024 * 1024 },
+		);
+		const stat = await fs.stat(tempPath);
+		if (!stat.size) throw new Error("denoised file is empty");
+		await moveFileWithOverwrite(micPath, originalPath);
+		await moveFileWithOverwrite(tempPath, micPath);
+		console.log(`[mac-mux] Voice denoise applied in ${Date.now() - startedAt}ms: ${micPath}`);
+	} catch (err) {
+		console.error("[mac-mux] Voice denoise failed, keeping raw microphone track:", err);
+		await fs.rm(tempPath, { force: true }).catch(() => undefined);
 	}
 }
 

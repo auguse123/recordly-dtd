@@ -27,6 +27,7 @@
 		"noSourcesFound": "No sources found",
 		"microphone": "Microphone",
 		"turnOffMicrophone": "Turn Off Microphone",
+		"voiceDenoise": "Voice cleanup",
 		"selectMicToEnable": "Select a microphone to enable",
 		"noMicrophonesFound": "No microphones found",
 		"webcam": "Webcam",
