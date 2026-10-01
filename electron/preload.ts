@@ -2,6 +2,9 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { RecordingSessionData } from "./ipc/types";
 
 type NativeVideoExportWriteResult = { success: boolean; error?: string };
+type IntroOutroSegmentPayload =
+	| { kind: "still"; png: Uint8Array; durationSec: number }
+	| { kind: "video"; mediaPath: string };
 type NativeVideoAudioMuxMetrics = {
 	tempVideoWriteMs?: number;
 	tempEditedAudioWriteMs?: number;
@@ -509,11 +512,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	applyIntroOutro: (payload: {
 		tempPath: string;
-		introPng?: Uint8Array | null;
-		outroPng?: Uint8Array | null;
-		durationSec: number;
+		intro?: IntroOutroSegmentPayload | null;
+		outro?: IntroOutroSegmentPayload | null;
 	}) => {
 		return ipcRenderer.invoke("apply-intro-outro", payload);
+	},
+	importIntroOutroMedia: () => {
+		return ipcRenderer.invoke("import-intro-outro-media");
 	},
 	generateShareKit: (videoPath: string) => {
 		return ipcRenderer.invoke("generate-share-kit", videoPath);

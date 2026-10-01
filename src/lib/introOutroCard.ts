@@ -1,22 +1,34 @@
 import dtdLogoUrl from "@/assets/branding/dtd-logo.svg";
-import type { IntroOutroCard, IntroOutroSettings } from "@/components/video-editor/introOutro";
+import type { IntroOutroCard } from "@/components/video-editor/introOutro";
+import { resolveMediaResourceUrl } from "@/lib/exporter/localMediaSource";
 
 const FONT_FAMILY = '"DM Sans", -apple-system, "Helvetica Neue", Arial, sans-serif';
 
-const logoCache = new Map<string, Promise<HTMLImageElement | null>>();
+const imageCache = new Map<string, Promise<HTMLImageElement | null>>();
 
-function loadLogo(url: string): Promise<HTMLImageElement | null> {
-	let pending = logoCache.get(url);
+function loadImage(url: string): Promise<HTMLImageElement | null> {
+	let pending = imageCache.get(url);
 	if (!pending) {
 		pending = new Promise((resolve) => {
 			const image = new Image();
+			// Media-server images must stay untainted so the export can read the canvas.
+			if (/^https?:/i.test(url)) image.crossOrigin = "anonymous";
 			image.onload = () => resolve(image);
-			image.onerror = () => resolve(null);
+			image.onerror = () => {
+				imageCache.delete(url);
+				resolve(null);
+			};
 			image.src = url;
 		});
-		logoCache.set(url, pending);
+		imageCache.set(url, pending);
 	}
 	return pending;
+}
+
+export interface IntroOutroAssets {
+	logo: HTMLImageElement | null;
+	/** The user's still image when the side uses an image instead of a title card. */
+	image: HTMLImageElement | null;
 }
 
 function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -37,29 +49,52 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
 	return lines;
 }
 
-export async function prepareIntroOutroAssets(settings: IntroOutroSettings) {
+export async function prepareIntroOutroAssets(card: IntroOutroCard): Promise<IntroOutroAssets> {
+	if (card.source === "media") {
+		if (card.media?.type !== "image") return { logo: null, image: null };
+		const url = await resolveMediaResourceUrl(card.media.path);
+		return { logo: null, image: await loadImage(url) };
+	}
 	await Promise.all([
 		document.fonts.load(`600 64px ${FONT_FAMILY}`),
 		document.fonts.load(`400 36px ${FONT_FAMILY}`),
 	]).catch(() => undefined);
-	return settings.showLogo ? loadLogo(settings.logoDataUrl ?? dtdLogoUrl) : null;
+	return {
+		logo: card.showLogo ? await loadImage(card.logoDataUrl ?? dtdLogoUrl) : null,
+		image: null,
+	};
 }
 
-/** Draws one card. Sizes are designed for a 1080px short side and scale from there. */
+/**
+ * Draws one side: the user's image (letterboxed on the background colour) or a
+ * title card. Sizes are designed for a 1080px short side and scale from there.
+ */
 export function drawIntroOutroCard(
 	ctx: CanvasRenderingContext2D,
 	width: number,
 	height: number,
-	settings: IntroOutroSettings,
 	card: IntroOutroCard,
-	logo: HTMLImageElement | null,
+	assets: IntroOutroAssets,
 ) {
+	ctx.save();
+	ctx.fillStyle = card.backgroundColor;
+	ctx.fillRect(0, 0, width, height);
+
+	if (card.source === "media") {
+		const image = assets.image;
+		if (image && image.naturalWidth > 0 && image.naturalHeight > 0) {
+			const scale = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+			const w = image.naturalWidth * scale;
+			const h = image.naturalHeight * scale;
+			ctx.drawImage(image, (width - w) / 2, (height - h) / 2, w, h);
+		}
+		ctx.restore();
+		return;
+	}
+
+	const logo = assets.logo;
 	const s = Math.min(width, height) / 1080;
 	const maxTextWidth = width * 0.84;
-
-	ctx.save();
-	ctx.fillStyle = settings.backgroundColor;
-	ctx.fillRect(0, 0, width, height);
 
 	let logoW = 0;
 	let logoH = 0;
@@ -94,7 +129,7 @@ export function drawIntroOutroCard(
 		y += logoH;
 		if (hasText) {
 			y += gap;
-			ctx.fillStyle = settings.accentColor;
+			ctx.fillStyle = card.accentColor;
 			ctx.beginPath();
 			ctx.roundRect((width - barW) / 2, y, barW, barH, barH / 2);
 			ctx.fill();
@@ -104,7 +139,7 @@ export function drawIntroOutroCard(
 
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
-	ctx.fillStyle = settings.textColor;
+	ctx.fillStyle = card.textColor;
 	ctx.font = `600 ${titleSize}px ${FONT_FAMILY}`;
 	for (const line of titleLines) {
 		ctx.fillText(line, width / 2, y + titleLineH / 2);
@@ -123,16 +158,18 @@ export function drawIntroOutroCard(
 export async function renderIntroOutroCardPng(
 	width: number,
 	height: number,
-	settings: IntroOutroSettings,
 	card: IntroOutroCard,
 ): Promise<Uint8Array> {
-	const logo = await prepareIntroOutroAssets(settings);
+	const assets = await prepareIntroOutroAssets(card);
+	if (card.source === "media" && !assets.image) {
+		throw new Error("Intro/outro image could not be loaded");
+	}
 	const canvas = document.createElement("canvas");
 	canvas.width = width;
 	canvas.height = height;
 	const ctx = canvas.getContext("2d");
 	if (!ctx) throw new Error("Canvas 2D context unavailable");
-	drawIntroOutroCard(ctx, width, height, settings, card, logo);
+	drawIntroOutroCard(ctx, width, height, card, assets);
 	const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
 	if (!blob) throw new Error("Failed to encode intro/outro card");
 	return new Uint8Array(await blob.arrayBuffer());

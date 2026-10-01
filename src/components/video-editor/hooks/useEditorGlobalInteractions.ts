@@ -1,27 +1,24 @@
-import { type RefObject, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { useShortcuts } from "@/contexts/ShortcutsContext";
 import { matchesShortcut } from "@/lib/shortcuts";
 import type { useTimelineState } from "../state/useTimelineState";
-import type { VideoPlaybackRef } from "../VideoPlayback";
 
 type Input = {
 	timeline: ReturnType<typeof useTimelineState>;
-	videoPlaybackRef: RefObject<VideoPlaybackRef | null>;
 	shortcuts: ReturnType<typeof useShortcuts>["shortcuts"];
 	isMac: boolean;
 	handleUndo: () => void;
 	handleRedo: () => void;
-	startPlayback: () => void;
+	togglePlayPause: () => void;
 };
 
 export function useEditorGlobalInteractions({
 	timeline,
-	videoPlaybackRef,
 	shortcuts,
 	isMac,
 	handleUndo,
 	handleRedo,
-	startPlayback,
+	togglePlayPause,
 }: Input) {
 	const heldPlaybackKey = useRef<string | null>(null);
 
@@ -76,10 +73,7 @@ export function useEditorGlobalInteractions({
 			consumePlaybackKey(event);
 			if (event.repeat) return;
 			heldPlaybackKey.current = keyIdentity(event);
-			const playback = videoPlaybackRef.current;
-			if (!playback?.video) return;
-			if (!playback.isPlaying) startPlayback();
-			else playback.pause();
+			togglePlayPause();
 		};
 		window.addEventListener("keydown", handleKeyDown, { capture: true });
 		window.addEventListener("keyup", handleKeyUp, { capture: true });
@@ -89,7 +83,7 @@ export function useEditorGlobalInteractions({
 			window.removeEventListener("keyup", handleKeyUp, { capture: true });
 			window.removeEventListener("blur", releasePlaybackKey);
 		};
-	}, [shortcuts, isMac, handleUndo, handleRedo, startPlayback, videoPlaybackRef]);
+	}, [shortcuts, isMac, handleUndo, handleRedo, togglePlayPause]);
 
 	useEffect(() => {
 		if (

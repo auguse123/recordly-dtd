@@ -13,7 +13,15 @@ import {
 	releaseOwnedExportPath,
 	writeToExportStream,
 } from "../export/exportStream";
-import { joinIntroOutro } from "../export/introOutro";
+import { type IntroOutroSegmentInput, joinIntroOutro } from "../export/introOutro";
+import {
+	getIntroOutroMediaType,
+	importIntroOutroMedia,
+	INTRO_OUTRO_IMAGE_EXTENSIONS,
+	INTRO_OUTRO_VIDEO_EXTENSIONS,
+	probeIntroOutroVideo,
+	resolveOwnedIntroOutroMedia,
+} from "../export/introOutroMedia";
 import {
 	enqueueNativeVideoExportFrameWrite,
 	enqueueNativeVideoExportFrameWrites,
@@ -47,7 +55,7 @@ import {
 	type NativeVideoExportFinishOptions,
 } from "../nativeVideoExport";
 import { isAllowedLocalReadPath, resolveApprovedLocalMediaPath } from "../project/manager";
-import { approvedLocalReadPaths } from "../state";
+import { approvedLocalReadPaths, approvedLocalReadRoots } from "../state";
 import { approveUserPath } from "../utils";
 import {
 	type CaptionSidecarPayload,
@@ -1097,15 +1105,83 @@ export function registerExportHandlers() {
 		}
 	});
 
+	const introOutroMediaDir = path.join(app.getPath("userData"), "intro-outro-media");
+	void fs
+		.mkdir(introOutroMediaDir, { recursive: true })
+		.then(() => fs.realpath(introOutroMediaDir))
+		.then((realDir) => approvedLocalReadRoots.add(realDir))
+		.catch((error) => console.warn("[intro-outro] media folder unavailable:", error));
+
+	ipcMain.handle("import-intro-outro-media", async (event) => {
+		try {
+			const parentWindow = BrowserWindow.fromWebContents(event.sender);
+			const options = {
+				title: "Choose an image or video",
+				filters: [
+					{
+						name: "Images & videos",
+						extensions: [...INTRO_OUTRO_IMAGE_EXTENSIONS, ...INTRO_OUTRO_VIDEO_EXTENSIONS],
+					},
+				],
+				properties: ["openFile" as const],
+			};
+			const result = parentWindow
+				? await dialog.showOpenDialog(parentWindow, options)
+				: await dialog.showOpenDialog(options);
+			const sourcePath = result.filePaths[0];
+			if (result.canceled || !sourcePath) {
+				return { success: false, canceled: true };
+			}
+			if (!getIntroOutroMediaType(sourcePath)) {
+				return { success: false, error: "Unsupported file type" };
+			}
+			const media = await importIntroOutroMedia({
+				ffmpegPath: getFfmpegBinaryPath(),
+				mediaDir: introOutroMediaDir,
+				sourcePath,
+			});
+			return { success: true, media };
+		} catch (error) {
+			console.error("Failed to import intro/outro media:", error);
+			return { success: false, error: error instanceof Error ? error.message : String(error) };
+		}
+	});
+
+	type IntroOutroSegmentPayload =
+		| { kind: "still"; png: Uint8Array; durationSec: number }
+		| { kind: "video"; mediaPath: string };
+
+	const resolveIntroOutroSegment = async (
+		segment: IntroOutroSegmentPayload | null | undefined,
+	): Promise<IntroOutroSegmentInput | undefined> => {
+		if (!segment || typeof segment !== "object") return undefined;
+		if (segment.kind === "still") {
+			const durationSec = Number(segment.durationSec);
+			if (!(segment.png instanceof Uint8Array)) throw new Error("Invalid intro/outro card");
+			if (!Number.isFinite(durationSec) || durationSec < 0.5 || durationSec > 10) {
+				throw new Error("Invalid intro/outro duration");
+			}
+			return { kind: "still", png: segment.png, durationSec };
+		}
+		if (segment.kind === "video") {
+			const mediaPath = await resolveOwnedIntroOutroMedia(introOutroMediaDir, segment.mediaPath);
+			if (!mediaPath || getIntroOutroMediaType(mediaPath) !== "video") {
+				throw new Error("Intro/outro video not found — choose it again");
+			}
+			const probe = await probeIntroOutroVideo(getFfmpegBinaryPath(), mediaPath);
+			return { kind: "video", path: mediaPath, ...probe };
+		}
+		throw new Error("Invalid intro/outro segment");
+	};
+
 	ipcMain.handle(
 		"apply-intro-outro",
 		async (
 			_event,
 			payload: {
 				tempPath: string;
-				introPng?: Uint8Array | null;
-				outroPng?: Uint8Array | null;
-				durationSec: number;
+				intro?: IntroOutroSegmentPayload | null;
+				outro?: IntroOutroSegmentPayload | null;
 			},
 		) => {
 			const tempPath = payload?.tempPath;
@@ -1115,26 +1191,23 @@ export function registerExportHandlers() {
 			if (!isOwnedExportPath(tempPath)) {
 				return { success: false, error: "Temp path is not an app-managed export temp" };
 			}
-			const introPng = payload.introPng instanceof Uint8Array ? payload.introPng : undefined;
-			const outroPng = payload.outroPng instanceof Uint8Array ? payload.outroPng : undefined;
-			if (!introPng && !outroPng) {
-				return { success: true, tempPath };
-			}
-			const durationSec = Number(payload.durationSec);
-			if (!Number.isFinite(durationSec) || durationSec < 0.5 || durationSec > 10) {
-				return { success: false, error: "Invalid intro/outro duration" };
-			}
 
 			let workDir: string | null = null;
 			try {
+				const [intro, outro] = await Promise.all([
+					resolveIntroOutroSegment(payload.intro),
+					resolveIntroOutroSegment(payload.outro),
+				]);
+				if (!intro && !outro) {
+					return { success: true, tempPath };
+				}
 				workDir = await fs.mkdtemp(path.join(app.getPath("temp"), "recordly-intro-outro-"));
 				const outputPath = await joinIntroOutro({
 					ffmpegPath: getFfmpegBinaryPath(),
 					mainPath: tempPath,
 					workDir,
-					introPng,
-					outroPng,
-					cardDurationSec: durationSec,
+					intro,
+					outro,
 				});
 				registerOwnedExportPath(outputPath);
 				await removeTemporaryExportFile(tempPath);
@@ -1145,7 +1218,7 @@ export function registerExportHandlers() {
 				if (workDir) {
 					await fs.rm(workDir, { recursive: true, force: true }).catch(() => undefined);
 				}
-				return { success: false, error: String(error) };
+				return { success: false, error: error instanceof Error ? error.message : String(error) };
 			}
 		},
 	);

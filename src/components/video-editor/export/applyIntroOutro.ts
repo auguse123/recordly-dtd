@@ -1,8 +1,34 @@
 import { toast } from "@/components/ui/toast";
 import type { ExportResult } from "@/lib/exporter/types";
 import { renderIntroOutroCardPng } from "@/lib/introOutroCard";
-import { hasEnabledIntroOutro, type IntroOutroSettings } from "../introOutro";
+import {
+	hasEnabledIntroOutro,
+	type IntroOutroCard,
+	type IntroOutroSettings,
+	isIntroOutroCardActive,
+	isIntroOutroVideo,
+} from "../introOutro";
 import { streamExportBlobToTempFile } from "./exportPersistence";
+
+type SegmentPayload =
+	| { kind: "still"; png: Uint8Array; durationSec: number }
+	| { kind: "video"; mediaPath: string };
+
+async function buildSegment(
+	card: IntroOutroCard,
+	width: number,
+	height: number,
+): Promise<SegmentPayload | undefined> {
+	if (!isIntroOutroCardActive(card)) return undefined;
+	if (isIntroOutroVideo(card) && card.media) {
+		return { kind: "video", mediaPath: card.media.path };
+	}
+	return {
+		kind: "still",
+		png: await renderIntroOutroCardPng(width, height, card),
+		durationSec: card.durationSec,
+	};
+}
 
 /**
  * Wraps a finished MP4 export with the intro/outro cards. On failure the
@@ -30,20 +56,11 @@ export async function applyIntroOutroToExport(
 	const baseResult: ExportResult = { ...result, tempFilePath: tempPath, blob: undefined };
 
 	try {
-		const [introPng, outroPng] = await Promise.all([
-			settings.intro.enabled
-				? renderIntroOutroCardPng(width, height, settings, settings.intro)
-				: null,
-			settings.outro.enabled
-				? renderIntroOutroCardPng(width, height, settings, settings.outro)
-				: null,
+		const [intro, outro] = await Promise.all([
+			buildSegment(settings.intro, width, height),
+			buildSegment(settings.outro, width, height),
 		]);
-		const joined = await window.electronAPI.applyIntroOutro({
-			tempPath,
-			introPng,
-			outroPng,
-			durationSec: settings.durationSec,
-		});
+		const joined = await window.electronAPI.applyIntroOutro({ tempPath, intro, outro });
 		if (!joined.success || !joined.tempPath) {
 			throw new Error(joined.error || "Intro/outro failed");
 		}

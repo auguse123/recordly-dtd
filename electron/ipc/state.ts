@@ -20,6 +20,8 @@ export let currentRecordingSession: RecordingSessionData | null = null;
 
 // ── Security: approved read paths ─────────────────────────────────────────────
 export const approvedLocalReadPaths = new Set<string>();
+/** App-owned folders whose files may always be served (e.g. intro/outro media). */
+export const approvedLocalReadRoots = new Set<string>();
 
 // ── Native macOS capture ──────────────────────────────────────────────────────
 export let nativeScreenRecordingActive = false;

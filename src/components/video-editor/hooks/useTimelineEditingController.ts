@@ -4,6 +4,7 @@ import { toast } from "@/components/ui/toast";
 import type { useI18n } from "@/contexts/I18nContext";
 import type { useShortcuts } from "@/contexts/ShortcutsContext";
 import { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
+import type { IntroOutroSettings } from "../introOutro";
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
@@ -18,6 +19,7 @@ import { useCursorTelemetry } from "./useCursorTelemetry";
 import { useEditorGlobalInteractions } from "./useEditorGlobalInteractions";
 import { useEditorPlaybackControls } from "./useEditorPlaybackControls";
 import { useFreshRecordingAutoZoom } from "./useFreshRecordingAutoZoom";
+import { useIntroOutroPreview } from "./useIntroOutroPreview";
 import { useTimelineProjection } from "./useTimelineProjection";
 import { useZoomRegionCommands } from "./useZoomRegionCommands";
 
@@ -35,6 +37,7 @@ type Input = {
 	currentTime: number;
 	isPlaying: boolean;
 	previewVolume: number;
+	introOutro: IntroOutroSettings;
 	loading: boolean;
 	isPreviewReady: boolean;
 	setActiveEffectSection: Dispatch<SetStateAction<EditorEffectSection>>;
@@ -101,12 +104,20 @@ export function useTimelineEditingController(input: Input) {
 		summarizeErrorMessage,
 		onSourceFallbackLoadError: handleSourceFallbackLoadError,
 	});
-	const playback = useEditorPlaybackControls({
+	const basePlayback = useEditorPlaybackControls({
 		videoPlaybackRef: input.videoPlaybackRef,
 		timelineRef: input.timelineRef,
 		playSourceAudioPreview: audio.playSourceAudioPreview,
 		timelinePlayheadTime: projection.timelinePlayheadTime,
 		timelineDuration: projection.timelineDuration,
+	});
+	const playback = useIntroOutroPreview({
+		base: basePlayback,
+		settings: input.introOutro,
+		videoPlaybackRef: input.videoPlaybackRef,
+		isPlaying: input.isPlaying,
+		playheadSec: projection.timelinePlayheadTime,
+		mainDurationSec: projection.timelineDuration,
 	});
 	const captionCommands = useCaptionCommands({
 		clipRegions: timeline.clipRegions,
@@ -215,12 +226,11 @@ export function useTimelineEditingController(input: Input) {
 
 	useEditorGlobalInteractions({
 		timeline,
-		videoPlaybackRef: input.videoPlaybackRef,
 		shortcuts: input.shortcuts,
 		isMac: input.isMac,
 		handleUndo: input.handleUndo,
 		handleRedo: input.handleRedo,
-		startPlayback: playback.startPlayback,
+		togglePlayPause: playback.togglePlayPause,
 	});
 
 	return {

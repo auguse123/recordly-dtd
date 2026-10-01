@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
-import { approvedLocalReadPaths } from "./ipc/state";
+import { approvedLocalReadPaths, approvedLocalReadRoots } from "./ipc/state";
 import { getMediaContentType } from "./mediaTypes";
 
 let mediaServerBaseUrl: string | null = null;
@@ -58,8 +58,18 @@ async function resolveRealPath(filePath: string): Promise<string | null> {
 	}
 }
 
+function isInsideApprovedRoot(realPath: string): boolean {
+	for (const root of approvedLocalReadRoots) {
+		const relative = path.relative(root, realPath);
+		if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 export function isAllowedMediaPath(realPath: string): boolean {
-	return approvedLocalReadPaths.has(realPath);
+	return approvedLocalReadPaths.has(realPath) || isInsideApprovedRoot(realPath);
 }
 
 async function handleMediaRequest(

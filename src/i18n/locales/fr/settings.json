@@ -262,13 +262,13 @@
 	},
 	"introOutro": {
 		"heading": "Début / Fin",
-		"hint": "Cartons ajoutés au début et à la fin des exports MP4, avec un fondu court.",
+		"hint": "Affichés avant et après la vidéo, avec un court fondu. Début et fin ont chacun leurs réglages.",
 		"reset": "Réinitialiser",
 		"intro": "Début",
 		"outro": "Fin",
 		"title": "Titre",
 		"subtitle": "Sous-titre",
-		"duration": "Durée du carton",
+		"duration": "Durée",
 		"logo": "Logo",
 		"uploadLogo": "Importer un logo",
 		"defaultLogo": "Logo Desk to Desk",
@@ -277,6 +277,19 @@
 		"colors": "Couleurs",
 		"background": "Fond",
 		"text": "Texte",
-		"accent": "Accent"
+		"accent": "Accent",
+		"enableIntro": "Ajouter un début",
+		"enableOutro": "Ajouter une fin",
+		"sourceCard": "Carte titre",
+		"sourceMedia": "Image ou vidéo",
+		"chooseMedia": "Choisir une image ou une vidéo",
+		"replaceMedia": "Remplacer l'image ou la vidéo",
+		"mediaVideo": "Vidéo · {{seconds}} s",
+		"mediaImage": "Image",
+		"mediaVideoHint": "Les vidéos gardent leur durée et leur son.",
+		"mediaFailed": "Ce fichier ne peut pas servir de début/fin.",
+		"timelineIntro": "Début",
+		"timelineOutro": "Fin",
+		"timelineAdd": "Ajouter"
 	}
 }

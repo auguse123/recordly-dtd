@@ -34,12 +34,15 @@ function setup(binding = DEFAULT_SHORTCUTS.playPause) {
 	const startPlayback = vi.fn(() => {
 		playback.isPlaying = true;
 	});
+	const togglePlayPause = () => {
+		if (playback.isPlaying) playback.pause();
+		else startPlayback();
+	};
 	useEditorGlobalInteractions({
 		timeline: {},
-		videoPlaybackRef: { current: playback },
 		shortcuts: { ...DEFAULT_SHORTCUTS, playPause: binding },
 		isMac: true,
-		startPlayback,
+		togglePlayPause,
 		handleUndo: vi.fn(),
 		handleRedo: vi.fn(),
 	} as unknown as Parameters<typeof useEditorGlobalInteractions>[0]);

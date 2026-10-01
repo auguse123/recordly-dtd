@@ -288,6 +288,7 @@ export default function VideoEditor() {
 		currentTime,
 		isPlaying,
 		previewVolume,
+		introOutro: exportSettings.introOutro,
 		loading,
 		isPreviewReady,
 		setActiveEffectSection,

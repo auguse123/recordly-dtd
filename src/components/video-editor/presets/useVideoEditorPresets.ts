@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction, useCallback, useMemo, useState } fr
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { type EditorPresetSnapshot, loadEditorPresets } from "../editorPreferences";
 import type { useExportSettings } from "../export/useExportSettings";
+import { normalizeIntroOutroSettings } from "../introOutro";
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
 import { useEditorPresets } from "./useEditorPresets";
@@ -156,7 +157,7 @@ export function useVideoEditorPresets({
 			exportSettings.setExportFormat(snapshot.exportFormat);
 			exportSettings.setGifFrameRate(snapshot.gifFrameRate);
 			exportSettings.setGifLoop(snapshot.gifLoop);
-			exportSettings.setIntroOutro(snapshot.introOutro);
+			exportSettings.setIntroOutro(normalizeIntroOutroSettings(snapshot.introOutro));
 			exportSettings.setGifSizePreset(snapshot.gifSizePreset);
 			timeline.setAutoCaptionSettings({ ...snapshot.autoCaptionSettings });
 			setWhisperExecutablePath(snapshot.whisperExecutablePath);

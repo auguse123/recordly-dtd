@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { useScopedT } from "@/contexts/I18nContext";
+import { resolveMediaElementSource } from "@/lib/exporter/localMediaSource";
 import { drawIntroOutroCard, prepareIntroOutroAssets } from "@/lib/introOutroCard";
+import { getRequestedIntroOutroSide, INTRO_OUTRO_FOCUS_EVENT } from "./hooks/useIntroOutroPreview";
 import {
 	DEFAULT_INTRO_OUTRO_SETTINGS,
 	INTRO_OUTRO_MAX_DURATION_SEC,
@@ -14,48 +16,66 @@ import {
 	INTRO_OUTRO_MIN_DURATION_SEC,
 	type IntroOutroCard,
 	type IntroOutroSettings,
+	type IntroOutroSide,
+	isIntroOutroVideo,
 } from "./introOutro";
 import { SliderControl } from "./SliderControl";
 
 const BRAND_COLORS = ["#FFFFFF", "#07293C", "#2ACAA5", "#F4F7F8", "#000000"] as const;
 const PREVIEW_WIDTH = 288;
 
-type CardKey = "intro" | "outro";
-
-function CardPreview({
-	settings,
-	card,
-	aspectRatio,
-}: {
-	settings: IntroOutroSettings;
-	card: IntroOutroCard;
-	aspectRatio: number;
-}) {
+function CardPreview({ card, aspectRatio }: { card: IntroOutroCard; aspectRatio: number }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const [videoSrc, setVideoSrc] = useState<string | null>(null);
 	const height = Math.round(PREVIEW_WIDTH / Math.min(Math.max(aspectRatio, 0.4), 3));
+	const isVideo = isIntroOutroVideo(card);
+	const videoPath = isVideo ? (card.media?.path ?? null) : null;
 
 	useEffect(() => {
+		if (!videoPath) {
+			setVideoSrc(null);
+			return;
+		}
 		let cancelled = false;
-		void prepareIntroOutroAssets(settings).then((logo) => {
+		void resolveMediaElementSource(videoPath).then(({ src }) => {
+			if (!cancelled) setVideoSrc(src);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [videoPath]);
+
+	useEffect(() => {
+		if (isVideo) return;
+		let cancelled = false;
+		void prepareIntroOutroAssets(card).then((assets) => {
 			const canvas = canvasRef.current;
 			const ctx = canvas?.getContext("2d");
 			if (cancelled || !canvas || !ctx) return;
 			const dpr = window.devicePixelRatio || 1;
 			canvas.width = PREVIEW_WIDTH * dpr;
 			canvas.height = height * dpr;
-			drawIntroOutroCard(ctx, canvas.width, canvas.height, settings, card, logo);
+			drawIntroOutroCard(ctx, canvas.width, canvas.height, card, assets);
 		});
 		return () => {
 			cancelled = true;
 		};
-	}, [settings, card, height]);
+	}, [card, height, isVideo]);
 
+	const className = "max-w-full self-center rounded-md border border-foreground/10";
+	if (isVideo) {
+		return (
+			<video
+				src={videoSrc ?? undefined}
+				style={{ width: PREVIEW_WIDTH, height, backgroundColor: card.backgroundColor }}
+				className={`${className} object-contain`}
+				controls
+				playsInline
+			/>
+		);
+	}
 	return (
-		<canvas
-			ref={canvasRef}
-			style={{ width: PREVIEW_WIDTH, height }}
-			className="max-w-full self-center rounded-md border border-foreground/10"
-		/>
+		<canvas ref={canvasRef} style={{ width: PREVIEW_WIDTH, height }} className={className} />
 	);
 }
 
@@ -70,11 +90,21 @@ export function IntroOutroSettingsPanel({
 }) {
 	const t = useScopedT("settings");
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [previewCard, setPreviewCard] = useState<CardKey>("intro");
+	const [side, setSide] = useState<IntroOutroSide>(getRequestedIntroOutroSide);
+	const [importing, setImporting] = useState(false);
 
-	const update = (patch: Partial<IntroOutroSettings>) => onChange({ ...settings, ...patch });
-	const updateCard = (key: CardKey, patch: Partial<IntroOutroCard>) =>
-		onChange({ ...settings, [key]: { ...settings[key], ...patch } });
+	useEffect(() => {
+		const handleFocus = (event: Event) => {
+			const detail = (event as CustomEvent<IntroOutroSide>).detail;
+			if (detail === "intro" || detail === "outro") setSide(detail);
+		};
+		window.addEventListener(INTRO_OUTRO_FOCUS_EVENT, handleFocus);
+		return () => window.removeEventListener(INTRO_OUTRO_FOCUS_EVENT, handleFocus);
+	}, []);
+	const card = settings[side];
+
+	const updateCard = (patch: Partial<IntroOutroCard>) =>
+		onChange({ ...settings, [side]: { ...settings[side], ...patch } });
 
 	const handleLogoFile = (file: File | undefined) => {
 		if (!file) return;
@@ -86,51 +116,191 @@ export function IntroOutroSettingsPanel({
 			toast.error(t("introOutro.logoTooLarge", "Logo must be under 2 MB."));
 			return;
 		}
+		const target = side;
 		const reader = new FileReader();
 		reader.onload = () => {
 			if (typeof reader.result === "string") {
-				update({ logoDataUrl: reader.result, showLogo: true });
+				onChange({
+					...settings,
+					[target]: { ...settings[target], logoDataUrl: reader.result, showLogo: true },
+				});
 			}
 		};
 		reader.readAsDataURL(file);
 	};
 
-	const renderCardFields = (key: CardKey, label: string) => {
-		const card = settings[key];
-		return (
+	const handleChooseMedia = async () => {
+		if (!window.electronAPI?.importIntroOutroMedia || importing) return;
+		const target = side;
+		setImporting(true);
+		try {
+			const result = await window.electronAPI.importIntroOutroMedia();
+			if (result.canceled) return;
+			if (!result.success || !result.media) {
+				toast.error(
+					result.error ||
+						t(
+							"introOutro.mediaFailed",
+							"This file could not be used as an intro/outro.",
+						),
+				);
+				return;
+			}
+			onChange({
+				...settings,
+				[target]: {
+					...settings[target],
+					enabled: true,
+					source: "media",
+					media: result.media,
+				},
+			});
+		} finally {
+			setImporting(false);
+		}
+	};
+
+	const sideLabel = (key: IntroOutroSide) =>
+		key === "intro" ? t("introOutro.intro", "Intro") : t("introOutro.outro", "Outro");
+
+	const durationSlider = (
+		<SliderControl
+			label={t("introOutro.duration", "Duration")}
+			value={card.durationSec}
+			min={INTRO_OUTRO_MIN_DURATION_SEC}
+			max={INTRO_OUTRO_MAX_DURATION_SEC}
+			step={0.5}
+			onChange={(durationSec) => updateCard({ durationSec })}
+			formatValue={(v) => `${v.toFixed(1)} s`}
+		/>
+	);
+
+	const backgroundControl = (
+		<ColorControl
+			compact
+			label={t("introOutro.background", "Background")}
+			value={card.backgroundColor}
+			colors={BRAND_COLORS}
+			onChange={(backgroundColor) => updateCard({ backgroundColor })}
+		/>
+	);
+
+	const renderCardFields = () => (
+		<>
+			<div className="flex flex-col gap-2">
+				<Input
+					aria-label={t("introOutro.title", "Title")}
+					placeholder={t("introOutro.title", "Title")}
+					value={card.title}
+					maxLength={120}
+					onChange={(e) => updateCard({ title: e.target.value })}
+				/>
+				<Input
+					aria-label={t("introOutro.subtitle", "Subtitle")}
+					placeholder={t("introOutro.subtitle", "Subtitle")}
+					value={card.subtitle}
+					maxLength={160}
+					onChange={(e) => updateCard({ subtitle: e.target.value })}
+				/>
+			</div>
+
+			{durationSlider}
+
 			<div className="flex flex-col gap-2.5">
 				<div className="flex items-center justify-between gap-3">
-					<Label className="text-[13px]">{label}</Label>
+					<Label className="text-[13px]">{t("introOutro.logo", "Logo")}</Label>
 					<Switch
-						aria-label={label}
-						checked={card.enabled}
-						onCheckedChange={(enabled) => {
-							updateCard(key, { enabled });
-							if (enabled) setPreviewCard(key);
-						}}
+						aria-label={t("introOutro.logo", "Logo")}
+						checked={card.showLogo}
+						onCheckedChange={(showLogo) => updateCard({ showLogo })}
 					/>
 				</div>
-				{card.enabled && (
-					<div className="flex flex-col gap-2">
-						<Input
-							aria-label={t("introOutro.title", "Title")}
-							placeholder={t("introOutro.title", "Title")}
-							value={card.title}
-							maxLength={120}
-							onFocus={() => setPreviewCard(key)}
-							onChange={(e) => updateCard(key, { title: e.target.value })}
-						/>
-						<Input
-							aria-label={t("introOutro.subtitle", "Subtitle")}
-							placeholder={t("introOutro.subtitle", "Subtitle")}
-							value={card.subtitle}
-							maxLength={160}
-							onFocus={() => setPreviewCard(key)}
-							onChange={(e) => updateCard(key, { subtitle: e.target.value })}
-						/>
+				{card.showLogo && (
+					<div className="flex flex-wrap gap-2">
+						<Button
+							variant="secondary"
+							size="sm"
+							type="button"
+							onClick={() => fileInputRef.current?.click()}
+						>
+							{t("introOutro.uploadLogo", "Upload logo")}
+						</Button>
+						{card.logoDataUrl && (
+							<Button
+								variant="ghost"
+								size="sm"
+								type="button"
+								onClick={() => updateCard({ logoDataUrl: null })}
+							>
+								{t("introOutro.defaultLogo", "Use Desk to Desk logo")}
+							</Button>
+						)}
 					</div>
 				)}
 			</div>
+
+			<div className="flex flex-col gap-2">
+				<Label className="text-[13px]">{t("introOutro.colors", "Colors")}</Label>
+				<div className="grid grid-cols-3 gap-2">
+					{backgroundControl}
+					<ColorControl
+						compact
+						label={t("introOutro.text", "Text")}
+						value={card.textColor}
+						colors={BRAND_COLORS}
+						onChange={(textColor) => updateCard({ textColor })}
+					/>
+					<ColorControl
+						compact
+						label={t("introOutro.accent", "Accent")}
+						value={card.accentColor}
+						colors={BRAND_COLORS}
+						onChange={(accentColor) => updateCard({ accentColor })}
+					/>
+				</div>
+			</div>
+		</>
+	);
+
+	const renderMediaFields = () => {
+		const media = card.media;
+		return (
+			<>
+				<div className="flex flex-col gap-1.5">
+					<Button
+						variant="secondary"
+						size="sm"
+						type="button"
+						disabled={importing}
+						onClick={() => void handleChooseMedia()}
+					>
+						{media
+							? t("introOutro.replaceMedia", "Replace image or video")
+							: t("introOutro.chooseMedia", "Choose image or video")}
+					</Button>
+					{media && (
+						<p className="truncate text-xs text-muted-foreground" title={media.name}>
+							{media.type === "video"
+								? t("introOutro.mediaVideo", "Video · {{seconds}} s", {
+										seconds: (media.durationSec ?? 0).toFixed(1),
+									})
+								: t("introOutro.mediaImage", "Image")}
+							{" — "}
+							{media.name}
+						</p>
+					)}
+					{media?.type === "video" && (
+						<p className="text-xs text-muted-foreground">
+							{t(
+								"introOutro.mediaVideoHint",
+								"Videos play at their own length, with their sound.",
+							)}
+						</p>
+					)}
+				</div>
+				{media?.type === "image" && durationSlider}
+				{media && <div className="grid grid-cols-3 gap-2">{backgroundControl}</div>}
+			</>
 		);
 	};
 
@@ -143,7 +313,9 @@ export function IntroOutroSettingsPanel({
 					size="sm"
 					className="text-xs text-muted"
 					type="button"
-					onClick={() => onChange(DEFAULT_INTRO_OUTRO_SETTINGS)}
+					onClick={() =>
+						onChange({ ...settings, [side]: DEFAULT_INTRO_OUTRO_SETTINGS[side] })
+					}
 				>
 					{t("introOutro.reset", "Reset")}
 				</Button>
@@ -151,118 +323,84 @@ export function IntroOutroSettingsPanel({
 			<p className="-mt-3 text-xs text-muted-foreground">
 				{t(
 					"introOutro.hint",
-					"Title cards added at the start and end of MP4 exports, with a short fade.",
+					"Shown before and after the video, with a short fade. Each side has its own settings.",
 				)}
 			</p>
 
-			<div className="flex flex-col gap-2">
-				<div className="flex gap-1 self-center rounded-lg bg-foreground/[0.04] p-0.5">
-					{(["intro", "outro"] as const).map((key) => (
-						<button
-							key={key}
-							type="button"
-							onClick={() => setPreviewCard(key)}
-							className={`rounded-md px-3 py-1 text-xs ${
-								previewCard === key
-									? "bg-background text-foreground shadow-sm"
-									: "text-muted-foreground"
+			<div className="flex gap-1 self-center rounded-lg bg-foreground/[0.04] p-0.5">
+				{(["intro", "outro"] as const).map((key) => (
+					<button
+						key={key}
+						type="button"
+						onClick={() => setSide(key)}
+						className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs ${
+							side === key
+								? "bg-background text-foreground shadow-sm"
+								: "text-muted-foreground"
+						}`}
+					>
+						{sideLabel(key)}
+						<span
+							className={`h-1.5 w-1.5 rounded-full ${
+								settings[key].enabled ? "bg-[#2ACAA5]" : "bg-foreground/20"
 							}`}
-						>
-							{key === "intro"
-								? t("introOutro.intro", "Intro")
-								: t("introOutro.outro", "Outro")}
-						</button>
-					))}
-				</div>
-				<CardPreview
-					settings={settings}
-					card={settings[previewCard]}
-					aspectRatio={aspectRatio}
+						/>
+					</button>
+				))}
+			</div>
+
+			<div className="flex items-center justify-between gap-3">
+				<Label className="text-[13px]">
+					{side === "intro"
+						? t("introOutro.enableIntro", "Add an intro")
+						: t("introOutro.enableOutro", "Add an outro")}
+				</Label>
+				<Switch
+					aria-label={sideLabel(side)}
+					checked={card.enabled}
+					onCheckedChange={(enabled) => updateCard({ enabled })}
 				/>
 			</div>
 
-			{renderCardFields("intro", t("introOutro.intro", "Intro"))}
-			{renderCardFields("outro", t("introOutro.outro", "Outro"))}
-
-			<SliderControl
-				label={t("introOutro.duration", "Card duration")}
-				value={settings.durationSec}
-				min={INTRO_OUTRO_MIN_DURATION_SEC}
-				max={INTRO_OUTRO_MAX_DURATION_SEC}
-				step={0.5}
-				onChange={(durationSec) => update({ durationSec })}
-				formatValue={(v) => `${v.toFixed(1)} s`}
-			/>
-
-			<div className="flex flex-col gap-2.5">
-				<div className="flex items-center justify-between gap-3">
-					<Label className="text-[13px]">{t("introOutro.logo", "Logo")}</Label>
-					<Switch
-						aria-label={t("introOutro.logo", "Logo")}
-						checked={settings.showLogo}
-						onCheckedChange={(showLogo) => update({ showLogo })}
-					/>
-				</div>
-				{settings.showLogo && (
-					<div className="flex flex-wrap gap-2">
-						<Button
-							variant="secondary"
-							size="sm"
-							type="button"
-							onClick={() => fileInputRef.current?.click()}
-						>
-							{t("introOutro.uploadLogo", "Upload logo")}
-						</Button>
-						{settings.logoDataUrl && (
-							<Button
-								variant="ghost"
-								size="sm"
+			{card.enabled && (
+				<>
+					<div className="grid grid-cols-2 gap-1 rounded-lg bg-foreground/[0.04] p-0.5">
+						{(["card", "media"] as const).map((source) => (
+							<button
+								key={source}
 								type="button"
-								onClick={() => update({ logoDataUrl: null })}
+								onClick={() => updateCard({ source })}
+								className={`rounded-md px-2 py-1 text-xs ${
+									card.source === source
+										? "bg-background text-foreground shadow-sm"
+										: "text-muted-foreground"
+								}`}
 							>
-								{t("introOutro.defaultLogo", "Use Desk to Desk logo")}
-							</Button>
-						)}
-						<input
-							ref={fileInputRef}
-							type="file"
-							accept="image/png,image/jpeg,image/svg+xml,image/webp"
-							className="hidden"
-							onChange={(e) => {
-								handleLogoFile(e.target.files?.[0]);
-								e.target.value = "";
-							}}
-						/>
+								{source === "card"
+									? t("introOutro.sourceCard", "Title card")
+									: t("introOutro.sourceMedia", "Image or video")}
+							</button>
+						))}
 					</div>
-				)}
-			</div>
 
-			<div className="flex flex-col gap-2">
-				<Label className="text-[13px]">{t("introOutro.colors", "Colors")}</Label>
-				<div className="grid grid-cols-3 gap-2">
-					<ColorControl
-						compact
-						label={t("introOutro.background", "Background")}
-						value={settings.backgroundColor}
-						colors={BRAND_COLORS}
-						onChange={(backgroundColor) => update({ backgroundColor })}
-					/>
-					<ColorControl
-						compact
-						label={t("introOutro.text", "Text")}
-						value={settings.textColor}
-						colors={BRAND_COLORS}
-						onChange={(textColor) => update({ textColor })}
-					/>
-					<ColorControl
-						compact
-						label={t("introOutro.accent", "Accent")}
-						value={settings.accentColor}
-						colors={BRAND_COLORS}
-						onChange={(accentColor) => update({ accentColor })}
-					/>
-				</div>
-			</div>
+					{(card.source === "card" || card.media) && (
+						<CardPreview card={card} aspectRatio={aspectRatio} />
+					)}
+
+					{card.source === "card" ? renderCardFields() : renderMediaFields()}
+				</>
+			)}
+
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept="image/png,image/jpeg,image/svg+xml,image/webp"
+				className="hidden"
+				onChange={(e) => {
+					handleLogoFile(e.target.files?.[0]);
+					e.target.value = "";
+				}}
+			/>
 		</section>
 	);
 }

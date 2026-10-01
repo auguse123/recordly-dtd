@@ -262,13 +262,13 @@
 	},
 	"introOutro": {
 		"heading": "Intro / Outro",
-		"hint": "Title cards added at the start and end of MP4 exports, with a short fade.",
+		"hint": "Shown before and after the video, with a short fade. Each side has its own settings.",
 		"reset": "Reset",
 		"intro": "Intro",
 		"outro": "Outro",
 		"title": "Title",
 		"subtitle": "Subtitle",
-		"duration": "Card duration",
+		"duration": "Duration",
 		"logo": "Logo",
 		"uploadLogo": "Upload logo",
 		"defaultLogo": "Use Desk to Desk logo",
@@ -277,6 +277,19 @@
 		"colors": "Colors",
 		"background": "Background",
 		"text": "Text",
-		"accent": "Accent"
+		"accent": "Accent",
+		"enableIntro": "Add an intro",
+		"enableOutro": "Add an outro",
+		"sourceCard": "Title card",
+		"sourceMedia": "Image or video",
+		"chooseMedia": "Choose image or video",
+		"replaceMedia": "Replace image or video",
+		"mediaVideo": "Video · {{seconds}} s",
+		"mediaImage": "Image",
+		"mediaVideoHint": "Videos play at their own length, with their sound.",
+		"mediaFailed": "This file could not be used as an intro/outro.",
+		"timelineIntro": "Intro",
+		"timelineOutro": "Outro",
+		"timelineAdd": "Add"
 	}
 }

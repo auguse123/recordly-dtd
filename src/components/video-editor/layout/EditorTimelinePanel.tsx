@@ -5,10 +5,12 @@ import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCo
 import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
 import type { useCaptionCommands } from "../hooks/useCaptionCommands";
 import type { useClipRegionCommands } from "../hooks/useClipRegionCommands";
-import type { useEditorPlaybackControls } from "../hooks/useEditorPlaybackControls";
+import type { EditorPlayback } from "../hooks/useIntroOutroPreview";
 import type { useTimelineProjection } from "../hooks/useTimelineProjection";
 import type { useZoomRegionCommands } from "../hooks/useZoomRegionCommands";
+import type { IntroOutroSide } from "../introOutro";
 import type { useTimelineState } from "../state/useTimelineState";
+import { IntroOutroTimelineBlock } from "../timeline/IntroOutroTimelineBlock";
 import TimelineEditor, { type TimelineEditorHandle } from "../timeline/TimelineEditor";
 
 type Props = {
@@ -16,7 +18,7 @@ type Props = {
 	timelineRef: RefObject<TimelineEditorHandle | null>;
 	timeline: ReturnType<typeof useTimelineState>;
 	projection: ReturnType<typeof useTimelineProjection>;
-	playback: ReturnType<typeof useEditorPlaybackControls>;
+	playback: EditorPlayback;
 	audio: ReturnType<typeof useVideoEditorAudio>;
 	zoomCommands: ReturnType<typeof useZoomRegionCommands>;
 	clipCommands: ReturnType<typeof useClipRegionCommands>;
@@ -32,6 +34,7 @@ type Props = {
 	disableSuggestedZooms: boolean;
 	currentTime: number;
 	handleSelectAnnotation: (id: string | null) => void;
+	onOpenIntroOutro: (side: IntroOutroSide) => void;
 };
 
 export function EditorTimelinePanel(props: Props) {
@@ -55,6 +58,7 @@ export function EditorTimelinePanel(props: Props) {
 		disableSuggestedZooms,
 		currentTime,
 		handleSelectAnnotation,
+		onOpenIntroOutro,
 	} = props;
 
 	return (
@@ -65,91 +69,109 @@ export function EditorTimelinePanel(props: Props) {
 			className="outline-none flex flex-shrink-0 flex-col bg-transparent px-4 pb-4 pt-2"
 			style={{ height: "22%", minHeight: 180, maxHeight: 280 }}
 		>
-			<TimelineEditor
-				ref={timelineRef}
-				videoDuration={projection.timelineDuration}
-				currentTime={currentTime}
-				playheadTime={projection.timelinePlayheadTime}
-				onSeek={playback.handleTimelineSeek}
-				videoPath={videoPath}
-				videoSourcePath={videoSourcePath}
-				cursorTelemetrySourcePath={cursorTelemetrySourcePath}
-				cursorTelemetry={normalizedCursorTelemetry}
-				autoSuggestZoomsTrigger={autoSuggestZoomsTrigger}
-				onAutoSuggestZoomsConsumed={handleAutoSuggestZoomsConsumed}
-				disableSuggestedZooms={disableSuggestedZooms}
-				zoomRegions={timeline.zoomRegions}
-				onZoomAdded={zoomCommands.handleZoomAdded}
-				onZoomSuggested={zoomCommands.handleZoomSuggested}
-				onZoomSpanChange={zoomCommands.handleZoomSpanChange}
-				onZoomDelete={zoomCommands.handleZoomDelete}
-				selectedZoomId={timeline.selectedZoomId}
-				onSelectZoom={zoomCommands.handleSelectZoom}
-				trimRegions={timeline.trimRegions}
-				clipRegions={timeline.clipRegions}
-				onClipSplit={clipCommands.handleClipSplit}
-				onClipDelete={clipCommands.handleClipDelete}
-				onClipSpanChange={clipCommands.handleClipSpanChange}
-				selectedClipId={timeline.selectedClipId}
-				onSelectClip={clipCommands.handleSelectClip}
-				audioRegions={timeline.audioRegions}
-				onAudioAdded={audioCommands.handleAudioAdded}
-				onAudioSpanChange={audioCommands.handleAudioSpanChange}
-				onAudioDelete={audioCommands.handleAudioDelete}
-				selectedAudioId={timeline.selectedAudioId}
-				onSelectAudio={audioCommands.handleSelectAudio}
-				captionRegions={projection.effectiveCaptionRegions}
-				onCaptionSpanChange={(id, span) => {
-					const fragment = projection.effectiveCaptionRegions.find(
-						(cue) => cue.id === id,
-					);
-					if (!fragment) return;
-					captionCommands.handleCaptionRetime(
-						fragment.sourceCueId,
-						retimeCaptionFragment(fragment, span),
-					);
-				}}
-				selectedCaptionId={
-					projection.effectiveCaptionRegions.find(
-						(cue) =>
-							cue.sourceCueId === timeline.selectedCaptionId &&
-							currentTime * 1000 >= cue.startMs &&
-							currentTime * 1000 < cue.endMs,
-					)?.id ??
-					projection.effectiveCaptionRegions.find(
-						(cue) => cue.sourceCueId === timeline.selectedCaptionId,
-					)?.id ??
-					null
-				}
-				onSelectCaption={(id) => {
-					const fragment = projection.effectiveCaptionRegions.find(
-						(cue) => cue.id === id,
-					);
-					captionCommands.handleSelectCaption(fragment?.sourceCueId ?? null);
-					if (fragment) playback.handleTimelineSeek(fragment.startMs / 1000);
-				}}
-				onCaptionDelete={(id) => {
-					const fragment = projection.effectiveCaptionRegions.find(
-						(cue) => cue.id === id,
-					);
-					if (fragment) captionCommands.handleCaptionDelete(fragment.sourceCueId);
-				}}
-				onCaptionAdded={captionCommands.handleCaptionAdded}
-				captionsEnabled={timeline.autoCaptionSettings.enabled}
-				captionQuickAddEnabled={timeline.autoCaptionSettings.timelineQuickAdd}
-				annotationRegions={timeline.annotationRegions}
-				onAnnotationAdded={annotationCommands.handleAnnotationAdded}
-				onAnnotationSpanChange={annotationCommands.handleAnnotationSpanChange}
-				onAnnotationDelete={annotationCommands.handleAnnotationDelete}
-				selectedAnnotationId={timeline.selectedAnnotationId}
-				onSelectAnnotation={handleSelectAnnotation}
-				showSourceAudioTrack={timeline.clipRegions.some((clip) => clip.showSourceAudio)}
-				sourceAudioResourceVersion={timeline.sourceAudioFallbackRefreshKey}
-				sourceAudioTrackSettings={audio.activeSourceAudioTrackSettings}
-				getSourceAudioTrackSettingsForClip={audio.getSourceAudioTrackSettingsForClip}
-				onSourceAudioAvailabilityChange={timeline.setHasClipSourceAudio}
-				onSourceAudioTracksMetaChange={audio.onSourceAudioTracksMetaChange}
-			/>
+			<div className="flex min-h-0 flex-1 gap-2">
+				<IntroOutroTimelineBlock
+					side="intro"
+					introOutro={playback.introOutro}
+					onOpenSettings={onOpenIntroOutro}
+				/>
+				<div className="flex min-w-0 flex-1 flex-col">
+					<TimelineEditor
+						ref={timelineRef}
+						videoDuration={projection.timelineDuration}
+						currentTime={currentTime}
+						playheadTime={projection.timelinePlayheadTime}
+						onSeek={playback.handleTimelineSeek}
+						videoPath={videoPath}
+						videoSourcePath={videoSourcePath}
+						cursorTelemetrySourcePath={cursorTelemetrySourcePath}
+						cursorTelemetry={normalizedCursorTelemetry}
+						autoSuggestZoomsTrigger={autoSuggestZoomsTrigger}
+						onAutoSuggestZoomsConsumed={handleAutoSuggestZoomsConsumed}
+						disableSuggestedZooms={disableSuggestedZooms}
+						zoomRegions={timeline.zoomRegions}
+						onZoomAdded={zoomCommands.handleZoomAdded}
+						onZoomSuggested={zoomCommands.handleZoomSuggested}
+						onZoomSpanChange={zoomCommands.handleZoomSpanChange}
+						onZoomDelete={zoomCommands.handleZoomDelete}
+						selectedZoomId={timeline.selectedZoomId}
+						onSelectZoom={zoomCommands.handleSelectZoom}
+						trimRegions={timeline.trimRegions}
+						clipRegions={timeline.clipRegions}
+						onClipSplit={clipCommands.handleClipSplit}
+						onClipDelete={clipCommands.handleClipDelete}
+						onClipSpanChange={clipCommands.handleClipSpanChange}
+						selectedClipId={timeline.selectedClipId}
+						onSelectClip={clipCommands.handleSelectClip}
+						audioRegions={timeline.audioRegions}
+						onAudioAdded={audioCommands.handleAudioAdded}
+						onAudioSpanChange={audioCommands.handleAudioSpanChange}
+						onAudioDelete={audioCommands.handleAudioDelete}
+						selectedAudioId={timeline.selectedAudioId}
+						onSelectAudio={audioCommands.handleSelectAudio}
+						captionRegions={projection.effectiveCaptionRegions}
+						onCaptionSpanChange={(id, span) => {
+							const fragment = projection.effectiveCaptionRegions.find(
+								(cue) => cue.id === id,
+							);
+							if (!fragment) return;
+							captionCommands.handleCaptionRetime(
+								fragment.sourceCueId,
+								retimeCaptionFragment(fragment, span),
+							);
+						}}
+						selectedCaptionId={
+							projection.effectiveCaptionRegions.find(
+								(cue) =>
+									cue.sourceCueId === timeline.selectedCaptionId &&
+									currentTime * 1000 >= cue.startMs &&
+									currentTime * 1000 < cue.endMs,
+							)?.id ??
+							projection.effectiveCaptionRegions.find(
+								(cue) => cue.sourceCueId === timeline.selectedCaptionId,
+							)?.id ??
+							null
+						}
+						onSelectCaption={(id) => {
+							const fragment = projection.effectiveCaptionRegions.find(
+								(cue) => cue.id === id,
+							);
+							captionCommands.handleSelectCaption(fragment?.sourceCueId ?? null);
+							if (fragment) playback.handleTimelineSeek(fragment.startMs / 1000);
+						}}
+						onCaptionDelete={(id) => {
+							const fragment = projection.effectiveCaptionRegions.find(
+								(cue) => cue.id === id,
+							);
+							if (fragment) captionCommands.handleCaptionDelete(fragment.sourceCueId);
+						}}
+						onCaptionAdded={captionCommands.handleCaptionAdded}
+						captionsEnabled={timeline.autoCaptionSettings.enabled}
+						captionQuickAddEnabled={timeline.autoCaptionSettings.timelineQuickAdd}
+						annotationRegions={timeline.annotationRegions}
+						onAnnotationAdded={annotationCommands.handleAnnotationAdded}
+						onAnnotationSpanChange={annotationCommands.handleAnnotationSpanChange}
+						onAnnotationDelete={annotationCommands.handleAnnotationDelete}
+						selectedAnnotationId={timeline.selectedAnnotationId}
+						onSelectAnnotation={handleSelectAnnotation}
+						showSourceAudioTrack={timeline.clipRegions.some(
+							(clip) => clip.showSourceAudio,
+						)}
+						sourceAudioResourceVersion={timeline.sourceAudioFallbackRefreshKey}
+						sourceAudioTrackSettings={audio.activeSourceAudioTrackSettings}
+						getSourceAudioTrackSettingsForClip={
+							audio.getSourceAudioTrackSettingsForClip
+						}
+						onSourceAudioAvailabilityChange={timeline.setHasClipSourceAudio}
+						onSourceAudioTracksMetaChange={audio.onSourceAudioTracksMetaChange}
+					/>
+				</div>
+				<IntroOutroTimelineBlock
+					side="outro"
+					introOutro={playback.introOutro}
+					onOpenSettings={onOpenIntroOutro}
+				/>
+			</div>
 		</div>
 	);
 }

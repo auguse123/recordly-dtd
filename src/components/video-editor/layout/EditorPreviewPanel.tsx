@@ -1,5 +1,11 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { Slider } from "@/components/ui/slider";
+import type { Dispatch, RefObject, SetStateAction } from "react";
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
 	CaretDown,
 	Check,
@@ -16,23 +22,18 @@ import {
 	SpeakerLow,
 	SpeakerX,
 } from "@/components/ui/icons";
-import type { Dispatch, RefObject, SetStateAction } from "react";
-import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import type { useI18n } from "@/contexts/I18nContext";
 import { ASPECT_RATIOS, type AspectRatio, getAspectRatioLabel } from "@/utils/aspectRatioUtils";
 import type { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
 import type { CaptionEditTarget } from "../captionEditing";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
-import type { useEditorPlaybackControls } from "../hooks/useEditorPlaybackControls";
+import type { EditorPlayback } from "../hooks/useIntroOutroPreview";
 import type { useTimelineProjection } from "../hooks/useTimelineProjection";
 import type { useZoomRegionCommands } from "../hooks/useZoomRegionCommands";
+import { IntroOutroPreviewOverlay } from "../IntroOutroPreviewOverlay";
 import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
@@ -57,7 +58,7 @@ type Props = {
 	timeline: ReturnType<typeof useTimelineState>;
 	audio: ReturnType<typeof useVideoEditorAudio>;
 	projection: ReturnType<typeof useTimelineProjection>;
-	playback: ReturnType<typeof useEditorPlaybackControls>;
+	playback: EditorPlayback;
 	zoomCommands: ReturnType<typeof useZoomRegionCommands>;
 	annotationCommands: ReturnType<typeof useAnnotationRegionCommands>;
 	effectiveCursorTelemetry: ReturnType<typeof useTimelineState>["cursorTelemetry"];
@@ -225,6 +226,10 @@ export function EditorPreviewPanel(props: Props) {
 											annotationCommands.handleAnnotationSizeChange,
 									}}
 								/>
+								<IntroOutroPreviewOverlay
+									introOutro={playback.introOutro}
+									volume={previewVolume}
+								/>
 							</div>
 						</div>
 					</div>
@@ -322,11 +327,11 @@ export function EditorPreviewPanel(props: Props) {
 						<Button
 							variant="ghost"
 							size="icon"
-							className={`h-9 w-9  ${isPlaying ? "bg-foreground/10 text-foreground hover:bg-foreground/20" : "bg-neutral-800 text-white hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-white/90"} `}
+							className={`h-9 w-9  ${playback.isPreviewPlaying ? "bg-foreground/10 text-foreground hover:bg-foreground/20" : "bg-neutral-800 text-white hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-white/90"} `}
 							onClick={playback.togglePlayPause}
-							title={isPlaying ? "Pause" : "Play"}
+							title={playback.isPreviewPlaying ? "Pause" : "Play"}
 						>
-							{isPlaying ? (
+							{playback.isPreviewPlaying ? (
 								<Pause className="h-3.5 w-3.5" weight="fill" />
 							) : (
 								<Play className="h-3.5 w-3.5" weight="fill" />

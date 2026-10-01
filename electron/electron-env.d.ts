@@ -585,10 +585,27 @@ interface Window {
 		discardExportedTemp: (tempPath: string) => Promise<{ success: boolean; error?: string }>;
 		applyIntroOutro: (payload: {
 			tempPath: string;
-			introPng?: Uint8Array | null;
-			outroPng?: Uint8Array | null;
-			durationSec: number;
+			intro?:
+				| { kind: "still"; png: Uint8Array; durationSec: number }
+				| { kind: "video"; mediaPath: string }
+				| null;
+			outro?:
+				| { kind: "still"; png: Uint8Array; durationSec: number }
+				| { kind: "video"; mediaPath: string }
+				| null;
 		}) => Promise<{ success: boolean; tempPath?: string; error?: string }>;
+		importIntroOutroMedia: () => Promise<{
+			success: boolean;
+			canceled?: boolean;
+			error?: string;
+			media?: {
+				path: string;
+				type: "image" | "video";
+				name: string;
+				durationSec: number | null;
+				hasAudio: boolean;
+			};
+		}>;
 		generateShareKit: (videoPath: string) => Promise<{
 			success: boolean;
 			folder?: string;
