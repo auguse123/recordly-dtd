@@ -2,7 +2,14 @@ import { useRef } from "react";
 import { Rnd } from "react-rnd";
 import { cn } from "@/lib/utils";
 import { getArrowComponent } from "./ArrowSvgs";
-import { type AnnotationRegion, BASE_PREVIEW_WIDTH, BLUR_ANNOTATION_STRENGTH } from "./types";
+import {
+	type AnnotationRegion,
+	BASE_PREVIEW_WIDTH,
+	BLUR_ANNOTATION_STRENGTH,
+	SHAPE_CORNER_RADIUS,
+	SHAPE_PADDING,
+	SHAPE_STROKE_SCALE,
+} from "./types";
 
 type Rect = {
 	x: number;
@@ -107,6 +114,22 @@ export function AnnotationOverlay({
 		return <ArrowComponent color={color} strokeWidth={strokeWidth} />;
 	};
 
+	const renderShape = (shape: "rectangle" | "ellipse") => {
+		const color = annotation.figureData?.color || "#2563EB";
+		const strokeWidth = annotation.figureData?.strokeWidth || 4;
+		return (
+			<div
+				className="w-full h-full"
+				style={{
+					border: `${strokeWidth * SHAPE_STROKE_SCALE * sizeScale}px solid ${color}`,
+					borderRadius:
+						shape === "ellipse" ? "50%" : `${SHAPE_CORNER_RADIUS * sizeScale}px`,
+					filter: `drop-shadow(0 ${2 * sizeScale}px ${4 * sizeScale}px rgba(0, 0, 0, 0.3))`,
+				}}
+			/>
+		);
+	};
+
 	const renderContent = () => {
 		switch (annotation.type) {
 			case "text":
@@ -170,6 +193,20 @@ export function AnnotationOverlay({
 					return (
 						<div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
 							No arrow data
+						</div>
+					);
+				}
+
+				if (
+					annotation.figureData.shape === "rectangle" ||
+					annotation.figureData.shape === "ellipse"
+				) {
+					return (
+						<div
+							className="w-full h-full"
+							style={{ padding: `${SHAPE_PADDING * sizeScale}px` }}
+						>
+							{renderShape(annotation.figureData.shape)}
 						</div>
 					);
 				}

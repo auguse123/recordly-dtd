@@ -61,7 +61,6 @@
 		"arrow": "Pijl",
 		"blur": "Vervagen",
 		"textContent": "Tekstinhoud",
-
 		"textPlaceholder": "Voer je tekst in...",
 		"fontStyle": "Lettertype",
 		"selectStyle": "Selecteer stijl",
@@ -90,9 +89,12 @@
 		"imageUploadError": "Upload een JPG-, PNG-, GIF- of WebP-afbeelding.",
 		"blurStrength": "Vervagingssterkte: {{strength}}",
 		"solidColor": "Effen Kleur (Censuur)",
-		"borderRadius": "Hoekradius"
+		"borderRadius": "Hoekradius",
+		"shape": "Shape",
+		"shapeArrow": "Arrow",
+		"shapeRectangle": "Rectangle",
+		"shapeEllipse": "Circle"
 	},
-
 	"fontStyles": {
 		"classic": "Klassiek",
 		"editor": "Editor",
@@ -170,7 +172,10 @@
 		"experimentalBuilds": "Tip: Schakel toegang tot experimentele builds in via de instellingen",
 		"cursorAppearance": "Tip: Je kunt het uiterlijk van je cursor aanpassen"
 	},
-	"account": { "title": "Account", "comingSoon": "Account binnenkort beschikbaar" },
+	"account": {
+		"title": "Account",
+		"comingSoon": "Account binnenkort beschikbaar"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "Er is niets kapot, maar we kunnen geen geanimeerde cursor-overlay renderen.",
 		"description": "Je apparaat ondersteunt geen native capture. Dit kan verschillende oorzaken hebben die we nog niet hebben achterhaald. Recordly blijft werken, maar cursor smoothing is dan niet mogelijk.",
@@ -190,7 +195,17 @@
 	},
 	"toolbar": {
 		"addLayer": "Laag toevoegen",
-		"splitClip": "Clip splitsen (C)"
+		"splitClip": "Clip splitsen (C)",
+		"aspectHints": {
+			"native": "Original recording size",
+			"16:9": "YouTube, website, email, WhatsApp",
+			"9:16": "Stories, Reels, TikTok, Shorts, WhatsApp status",
+			"1:1": "LinkedIn & Instagram feed",
+			"4:3": "Slides, presentations",
+			"4:5": "Best for LinkedIn & Instagram feed",
+			"16:10": "Mac screen",
+			"10:16": "Vertical, Mac screen rotated"
+		}
 	},
 	"timeline": {
 		"expand": "Tijdlijn uitvouwen",

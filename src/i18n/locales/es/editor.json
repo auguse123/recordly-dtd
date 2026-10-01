@@ -89,9 +89,12 @@
 		"imageUploadError": "Por favor sube un archivo de imagen JPG, PNG, GIF o WebP.",
 		"blurStrength": "Fuerza del Desenfoque: {{strength}}",
 		"solidColor": "Color Sólido (Censura)",
-		"borderRadius": "Radio del Borde"
+		"borderRadius": "Radio del Borde",
+		"shape": "Shape",
+		"shapeArrow": "Arrow",
+		"shapeRectangle": "Rectangle",
+		"shapeEllipse": "Circle"
 	},
-
 	"fontStyles": {
 		"classic": "Clásico",
 		"editor": "Editor",
@@ -169,7 +172,10 @@
 		"experimentalBuilds": "Consejo: Activa el acceso a versiones experimentales en la configuración",
 		"cursorAppearance": "Consejo: Puedes personalizar la apariencia del cursor"
 	},
-	"account": { "title": "Cuenta", "comingSoon": "Cuenta próximamente" },
+	"account": {
+		"title": "Cuenta",
+		"comingSoon": "Cuenta próximamente"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "Nada está roto, pero no podremos renderizar una superposición de cursor animada.",
 		"description": "Tu dispositivo no es compatible con la captura nativa. Esto puede deberse a varias razones que todavía no hemos identificado. Recordly seguirá funcionando, pero hará imposible el suavizado del cursor.",
@@ -189,7 +195,17 @@
 	},
 	"toolbar": {
 		"addLayer": "Agregar capa",
-		"splitClip": "Dividir clip (C)"
+		"splitClip": "Dividir clip (C)",
+		"aspectHints": {
+			"native": "Original recording size",
+			"16:9": "YouTube, website, email, WhatsApp",
+			"9:16": "Stories, Reels, TikTok, Shorts, WhatsApp status",
+			"1:1": "LinkedIn & Instagram feed",
+			"4:3": "Slides, presentations",
+			"4:5": "Best for LinkedIn & Instagram feed",
+			"16:10": "Mac screen",
+			"10:16": "Vertical, Mac screen rotated"
+		}
 	},
 	"timeline": {
 		"expand": "Expandir línea de tiempo",

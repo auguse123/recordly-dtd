@@ -89,9 +89,12 @@
 		"imageUploadError": "請上傳 JPG、PNG、GIF 或 WebP 圖片檔案。",
 		"blurStrength": "模糊強度: {{strength}}",
 		"solidColor": "純色 (審查)",
-		"borderRadius": "邊框半徑"
+		"borderRadius": "邊框半徑",
+		"shape": "Shape",
+		"shapeArrow": "Arrow",
+		"shapeRectangle": "Rectangle",
+		"shapeEllipse": "Circle"
 	},
-
 	"fontStyles": {
 		"classic": "經典",
 		"editor": "編輯器",
@@ -169,7 +172,10 @@
 		"experimentalBuilds": "提示：可在設定中開啟實驗版本存取權",
 		"cursorAppearance": "提示：你可以自訂游標外觀"
 	},
-	"account": { "title": "帳號", "comingSoon": "帳號功能即將推出" },
+	"account": {
+		"title": "帳號",
+		"comingSoon": "帳號功能即將推出"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "沒有出錯，但我們無法轉譯動畫游標覆蓋層。",
 		"description": "你的裝置不支援原生擷取。這可能是由我們尚未釐清的多種原因造成的。Recordly 仍可繼續運作，但無法進行游標平滑處理。",
@@ -189,7 +195,17 @@
 	},
 	"toolbar": {
 		"addLayer": "新增圖層",
-		"splitClip": "拆分片段 (C)"
+		"splitClip": "拆分片段 (C)",
+		"aspectHints": {
+			"native": "Original recording size",
+			"16:9": "YouTube, website, email, WhatsApp",
+			"9:16": "Stories, Reels, TikTok, Shorts, WhatsApp status",
+			"1:1": "LinkedIn & Instagram feed",
+			"4:3": "Slides, presentations",
+			"4:5": "Best for LinkedIn & Instagram feed",
+			"16:10": "Mac screen",
+			"10:16": "Vertical, Mac screen rotated"
+		}
 	},
 	"timeline": {
 		"expand": "展開時間軸",

@@ -89,9 +89,12 @@
 		"imageUploadError": "Carica un file immagine JPG, PNG, GIF o WebP.",
 		"blurStrength": "Intensità sfocatura: {{strength}}",
 		"solidColor": "Colore pieno (Censura)",
-		"borderRadius": "Raggio bordo"
+		"borderRadius": "Raggio bordo",
+		"shape": "Shape",
+		"shapeArrow": "Arrow",
+		"shapeRectangle": "Rectangle",
+		"shapeEllipse": "Circle"
 	},
-
 	"fontStyles": {
 		"classic": "Classico",
 		"editor": "Editor",
@@ -169,7 +172,10 @@
 		"experimentalBuilds": "Suggerimento: Attiva l’accesso alle build sperimentali nelle impostazioni",
 		"cursorAppearance": "Suggerimento: Puoi personalizzare l’aspetto del cursore"
 	},
-	"account": { "title": "Account", "comingSoon": "Account in arrivo" },
+	"account": {
+		"title": "Account",
+		"comingSoon": "Account in arrivo"
+	},
 	"nativeCaptureUnavailable": {
 		"title": "Niente è rotto, ma non sarà possibile renderizzare un overlay del cursore animato.",
 		"description": "Il tuo dispositivo non supporta la cattura nativa. Le cause possono essere varie e non ancora identificate. Recordly funziona comunque, ma non è possibile applicare lo smoothing del cursore.",
@@ -189,7 +195,17 @@
 	},
 	"toolbar": {
 		"addLayer": "Aggiungi livello",
-		"splitClip": "Dividi clip (C)"
+		"splitClip": "Dividi clip (C)",
+		"aspectHints": {
+			"native": "Original recording size",
+			"16:9": "YouTube, website, email, WhatsApp",
+			"9:16": "Stories, Reels, TikTok, Shorts, WhatsApp status",
+			"1:1": "LinkedIn & Instagram feed",
+			"4:3": "Slides, presentations",
+			"4:5": "Best for LinkedIn & Instagram feed",
+			"16:10": "Mac screen",
+			"10:16": "Vertical, Mac screen rotated"
+		}
 	},
 	"timeline": {
 		"expand": "Espandi timeline",

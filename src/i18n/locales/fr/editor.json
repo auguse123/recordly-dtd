@@ -58,7 +58,7 @@
 		"active": "Actif",
 		"text": "Texte",
 		"image": "Image",
-		"arrow": "Flèche",
+		"arrow": "Formes",
 		"blur": "Flou",
 		"textContent": "Contenu du texte",
 		"textPlaceholder": "Entrez votre texte...",
@@ -79,7 +79,7 @@
 		"supportedFormats": "Formats pris en charge : JPG, PNG, GIF, WebP",
 		"arrowDirection": "Direction de la flèche",
 		"strokeWidth": "Épaisseur du trait : {{width}} px",
-		"arrowColor": "Couleur de la flèche",
+		"arrowColor": "Couleur",
 		"deleteAnnotation": "Supprimer l’annotation",
 		"shortcutsAndTips": "Raccourcis et conseils",
 		"tipSelectAnnotation": "Déplacez la tête de lecture vers une zone d’annotations superposées et sélectionnez un élément.",
@@ -89,7 +89,11 @@
 		"imageUploadError": "Veuillez importer une image JPG, PNG, GIF ou WebP.",
 		"blurStrength": "Intensité du flou : {{strength}}",
 		"solidColor": "Couleur unie (censure)",
-		"borderRadius": "Rayon de bordure"
+		"borderRadius": "Rayon de bordure",
+		"shape": "Forme",
+		"shapeArrow": "Flèche",
+		"shapeRectangle": "Rectangle",
+		"shapeEllipse": "Cercle"
 	},
 	"fontStyles": {
 		"classic": "Classique",

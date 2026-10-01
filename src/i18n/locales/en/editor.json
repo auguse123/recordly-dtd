@@ -58,7 +58,7 @@
 		"active": "Active",
 		"text": "Text",
 		"image": "Image",
-		"arrow": "Arrow",
+		"arrow": "Shapes",
 		"blur": "Blur",
 		"textContent": "Text Content",
 		"textPlaceholder": "Enter your text...",
@@ -79,7 +79,7 @@
 		"supportedFormats": "Supported formats: JPG, PNG, GIF, WebP",
 		"arrowDirection": "Arrow Direction",
 		"strokeWidth": "Stroke Width: {{width}}px",
-		"arrowColor": "Arrow Color",
+		"arrowColor": "Color",
 		"deleteAnnotation": "Delete Annotation",
 		"shortcutsAndTips": "Shortcuts & Tips",
 		"tipSelectAnnotation": "Move playhead to overlapping annotation section and select an item.",
@@ -89,7 +89,11 @@
 		"imageUploadError": "Please upload a JPG, PNG, GIF, or WebP image file.",
 		"blurStrength": "Blur Strength: {{strength}}",
 		"solidColor": "Solid Color (Censorship)",
-		"borderRadius": "Border Radius"
+		"borderRadius": "Border Radius",
+		"shape": "Shape",
+		"shapeArrow": "Arrow",
+		"shapeRectangle": "Rectangle",
+		"shapeEllipse": "Circle"
 	},
 	"fontStyles": {
 		"classic": "Classic",

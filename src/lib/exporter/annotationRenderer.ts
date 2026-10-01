@@ -2,6 +2,10 @@ import {
 	type AnnotationRegion,
 	type ArrowDirection,
 	BLUR_ANNOTATION_STRENGTH,
+	type FigureData,
+	SHAPE_CORNER_RADIUS,
+	SHAPE_PADDING,
+	SHAPE_STROKE_SCALE,
 } from "@/components/video-editor/types";
 
 export interface AnnotationRenderAssets {
@@ -140,6 +144,87 @@ function parseSvgPath(
 	}
 
 	return commands;
+}
+
+function renderShape(
+	ctx: CanvasRenderingContext2D,
+	shape: "rectangle" | "ellipse",
+	color: string,
+	strokeWidth: number,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	scaleFactor: number,
+) {
+	const lineWidth = strokeWidth * SHAPE_STROKE_SCALE * scaleFactor;
+	// Mirror the preview: padding outside, CSS border drawn inside the box.
+	const inset = SHAPE_PADDING * scaleFactor + lineWidth / 2;
+	const innerWidth = width - inset * 2;
+	const innerHeight = height - inset * 2;
+	if (innerWidth <= 0 || innerHeight <= 0) return;
+
+	ctx.save();
+	ctx.shadowColor = "rgba(0, 0, 0, 0.3)";
+	ctx.shadowBlur = 4 * scaleFactor;
+	ctx.shadowOffsetX = 0;
+	ctx.shadowOffsetY = 2 * scaleFactor;
+	ctx.strokeStyle = color;
+	ctx.lineWidth = lineWidth;
+
+	ctx.beginPath();
+	if (shape === "ellipse") {
+		ctx.ellipse(
+			x + width / 2,
+			y + height / 2,
+			innerWidth / 2,
+			innerHeight / 2,
+			0,
+			0,
+			Math.PI * 2,
+		);
+	} else {
+		const radius = Math.max(0, SHAPE_CORNER_RADIUS * scaleFactor - lineWidth / 2);
+		ctx.roundRect(x + inset, y + inset, innerWidth, innerHeight, radius);
+	}
+	ctx.stroke();
+	ctx.restore();
+}
+
+function renderFigure(
+	ctx: CanvasRenderingContext2D,
+	figureData: FigureData,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	scaleFactor: number,
+) {
+	if (figureData.shape === "rectangle" || figureData.shape === "ellipse") {
+		renderShape(
+			ctx,
+			figureData.shape,
+			figureData.color,
+			figureData.strokeWidth,
+			x,
+			y,
+			width,
+			height,
+			scaleFactor,
+		);
+		return;
+	}
+	renderArrow(
+		ctx,
+		figureData.arrowDirection,
+		figureData.color,
+		figureData.strokeWidth,
+		x,
+		y,
+		width,
+		height,
+		scaleFactor,
+	);
 }
 
 function renderArrow(
@@ -402,11 +487,9 @@ export async function renderAnnotations(
 
 			case "figure":
 				if (annotation.figureData) {
-					renderArrow(
+					renderFigure(
 						ctx,
-						annotation.figureData.arrowDirection,
-						annotation.figureData.color,
-						annotation.figureData.strokeWidth,
+						annotation.figureData,
 						x,
 						y,
 						width,
@@ -496,17 +579,7 @@ export async function renderAnnotationToCanvas(
 				return null;
 			}
 
-			renderArrow(
-				ctx,
-				annotation.figureData.arrowDirection,
-				annotation.figureData.color,
-				annotation.figureData.strokeWidth,
-				0,
-				0,
-				canvasWidth,
-				canvasHeight,
-				scaleFactor,
-			);
+			renderFigure(ctx, annotation.figureData, 0, 0, canvasWidth, canvasHeight, scaleFactor);
 			break;
 		case "blur":
 			// Blur annotations must sample already-rendered scene pixels,

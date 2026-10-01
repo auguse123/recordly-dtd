@@ -1,6 +1,8 @@
-import { ToggleButton } from "@heroui/react";
-import { Card } from "@heroui/react";
-import { TextArea } from "@/components/ui/input";
+import { Card, ToggleButton } from "@heroui/react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ChoiceGroup, ChoiceItem } from "@/components/ui/choice-group";
+import { ColorControl, ColorPalette } from "@/components/ui/color-picker";
 import {
 	AlignCenterHorizontal as AlignCenter,
 	AlignLeft,
@@ -15,10 +17,7 @@ import {
 	TextUnderline as Underline,
 	UploadSimple as Upload,
 } from "@/components/ui/icons";
-import { ColorControl, ColorPalette } from "@/components/ui/color-picker";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
+import { TextArea } from "@/components/ui/input";
 
 import {
 	Select,
@@ -28,14 +27,46 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { ChoiceGroup, ChoiceItem } from "@/components/ui/choice-group";
+import { toast } from "@/components/ui/toast";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { type CustomFont, getCustomFonts } from "@/lib/customFonts";
 import { cn } from "@/lib/utils";
 import { useScopedT } from "../../contexts/I18nContext";
 import { AddCustomFontDialog } from "./AddCustomFontDialog";
 import { getArrowComponent } from "./ArrowSvgs";
-import type { AnnotationRegion, AnnotationType, ArrowDirection, FigureData } from "./types";
+import type {
+	AnnotationRegion,
+	AnnotationType,
+	ArrowDirection,
+	FigureData,
+	FigureShape,
+} from "./types";
+
+const FIGURE_SHAPES: {
+	shape: FigureShape;
+	labelKey: string;
+	fallback: string;
+	icon: ReactNode;
+}[] = [
+	{
+		shape: "arrow",
+		labelKey: "annotations.shapeArrow",
+		fallback: "Arrow",
+		icon: <path d="M4 12h16m0 0l-6-6m6 6l-6 6" />,
+	},
+	{
+		shape: "rectangle",
+		labelKey: "annotations.shapeRectangle",
+		fallback: "Rectangle",
+		icon: <rect x="3" y="6" width="18" height="12" rx="2" />,
+	},
+	{
+		shape: "ellipse",
+		labelKey: "annotations.shapeEllipse",
+		fallback: "Circle",
+		icon: <ellipse cx="12" cy="12" rx="9" ry="7" />,
+	},
+];
 
 interface AnnotationSettingsPanelProps {
 	annotation: AnnotationRegion;
@@ -502,59 +533,108 @@ export function AnnotationSettingsPanel({
 							<div className="space-y-4">
 								<div>
 									<label className="text-sm font-medium text-foreground mb-3 block">
-										{t("annotations.arrowDirection")}
+										{t("annotations.shape", "Shape")}
 									</label>
-									<div className="grid grid-cols-4 gap-2">
-										{(
-											[
-												"up",
-												"down",
-												"left",
-												"right",
-												"up-right",
-												"up-left",
-												"down-right",
-												"down-left",
-											] as ArrowDirection[]
-										).map((direction) => {
-											const ArrowComponent = getArrowComponent(direction);
-											return (
-												<ToggleButton
-													isSelected={
-														annotation.figureData?.arrowDirection ===
-														direction
-													}
-													key={direction}
-													onClick={() => {
-														const newFigureData: FigureData = {
-															...annotation.figureData!,
-															arrowDirection: direction,
-														};
-														onFigureDataChange?.(newFigureData);
-													}}
-													aria-label={t(
-														"annotations.arrowDirectionOption",
-														"Arrow direction: {{direction}}",
-														{ direction: direction.replace(/-/g, " ") },
-													)}
-													className={cn(
-														"h-16 flex items-center justify-center p-2",
-													)}
-												>
-													<ArrowComponent
-														color={
-															annotation.figureData
-																?.arrowDirection === direction
-																? "#ffffff"
-																: "#94a3b8"
-														}
-														strokeWidth={3}
-													/>
-												</ToggleButton>
-											);
-										})}
+									<div className="grid grid-cols-3 gap-2">
+										{FIGURE_SHAPES.map(
+											({ shape, labelKey, fallback, icon }) => {
+												const isSelected =
+													(annotation.figureData?.shape ?? "arrow") ===
+													shape;
+												return (
+													<ToggleButton
+														key={shape}
+														isSelected={isSelected}
+														onClick={() => {
+															onFigureDataChange?.({
+																...annotation.figureData!,
+																shape,
+															});
+														}}
+														aria-label={t(labelKey, fallback)}
+														className="h-14 flex flex-col items-center justify-center gap-1 p-1 text-xs"
+													>
+														<svg
+															className="w-5 h-5"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															strokeWidth="2"
+															strokeLinecap="round"
+															strokeLinejoin="round"
+														>
+															{icon}
+														</svg>
+														{t(labelKey, fallback)}
+													</ToggleButton>
+												);
+											},
+										)}
 									</div>
 								</div>
+
+								{(annotation.figureData?.shape ?? "arrow") === "arrow" && (
+									<div>
+										<label className="text-sm font-medium text-foreground mb-3 block">
+											{t("annotations.arrowDirection")}
+										</label>
+										<div className="grid grid-cols-4 gap-2">
+											{(
+												[
+													"up",
+													"down",
+													"left",
+													"right",
+													"up-right",
+													"up-left",
+													"down-right",
+													"down-left",
+												] as ArrowDirection[]
+											).map((direction) => {
+												const ArrowComponent = getArrowComponent(direction);
+												return (
+													<ToggleButton
+														isSelected={
+															annotation.figureData
+																?.arrowDirection === direction
+														}
+														key={direction}
+														onClick={() => {
+															const newFigureData: FigureData = {
+																...annotation.figureData!,
+																arrowDirection: direction,
+															};
+															onFigureDataChange?.(newFigureData);
+														}}
+														aria-label={t(
+															"annotations.arrowDirectionOption",
+															"Arrow direction: {{direction}}",
+															{
+																direction: direction.replace(
+																	/-/g,
+																	" ",
+																),
+															},
+														)}
+														className={cn(
+															"h-16 flex items-center justify-center p-2",
+														)}
+													>
+														<ArrowComponent
+															color={
+																annotation.figureData
+																	?.arrowDirection === direction
+																	? "#ffffff"
+																	: "#94a3b8"
+															}
+															strokeWidth={3}
+														/>
+													</ToggleButton>
+												);
+											})}
+										</div>
+									</div>
+								)}
 
 								<div>
 									<label className="text-sm font-medium text-foreground mb-2 block">

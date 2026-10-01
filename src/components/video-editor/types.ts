@@ -438,7 +438,11 @@ export type ArrowDirection =
 	| "down-right"
 	| "down-left";
 
+export type FigureShape = "arrow" | "rectangle" | "ellipse";
+
 export interface FigureData {
+	/** Missing on projects saved before shapes existed: treat as "arrow". */
+	shape?: FigureShape;
 	arrowDirection: ArrowDirection;
 	color: string;
 	strokeWidth: number;
@@ -513,6 +517,11 @@ export const DEFAULT_ANNOTATION_STYLE: AnnotationTextStyle = {
 	textAlign: "center",
 	borderRadius: 8,
 };
+
+// Rectangle/ellipse outlines, in BASE_PREVIEW_WIDTH pixels (scaled like the arrow padding).
+export const SHAPE_STROKE_SCALE = 1.5;
+export const SHAPE_CORNER_RADIUS = 12;
+export const SHAPE_PADDING = 4;
 
 export const DEFAULT_FIGURE_DATA: FigureData = {
 	arrowDirection: "right",
