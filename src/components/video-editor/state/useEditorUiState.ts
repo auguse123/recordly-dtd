@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OPEN_EDITOR_SECTION_EVENT } from "@/lib/announcementActions";
 import { type AnnouncementEditorSection, isAnnouncementEditorSection } from "@/lib/announcements";
 import { ASPECT_RATIOS, type AspectRatio } from "@/utils/aspectRatioUtils";
@@ -6,6 +6,10 @@ import type { loadEditorPreferences } from "../editorPreferences";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { CropRegion, EditorEffectSection } from "../types";
 import type { VideoPlaybackRef } from "../VideoPlayback";
+import {
+	createPlayheadClock,
+	PLAYING_TIME_COMMIT_INTERVAL_MS,
+} from "../videoPlayback/playheadClock";
 
 type SessionPresentation = {
 	hideOverlayCursorByDefault?: boolean;
@@ -22,7 +26,41 @@ export function useEditorUiState(
 		typeof navigator !== "undefined" && /Mac/i.test(navigator.platform) ? "darwin" : "",
 	);
 	const [isPlaying, setIsPlaying] = useState(false);
-	const [currentTime, setCurrentTime] = useState(0);
+	// `playheadClock` moves every frame; `currentTime` is the React copy the rest of
+	// the editor renders from, committed at a calmer pace while playing.
+	const [playheadClock] = useState(() => createPlayheadClock(0));
+	const [currentTime, setCommittedTime] = useState(0);
+	const isPlayingRef = useRef(false);
+	const lastTimeCommitAtRef = useRef(0);
+	const setCurrentTime = useCallback(
+		(value: SetStateAction<number>) => {
+			const next = typeof value === "function" ? value(playheadClock.getTime()) : value;
+			playheadClock.setTime(next);
+			lastTimeCommitAtRef.current = performance.now();
+			setCommittedTime(next);
+		},
+		[playheadClock],
+	);
+	const handlePlaybackTime = useCallback(
+		(time: number) => {
+			playheadClock.setTime(time);
+			const now = performance.now();
+			if (
+				isPlayingRef.current &&
+				now - lastTimeCommitAtRef.current < PLAYING_TIME_COMMIT_INTERVAL_MS
+			) {
+				return;
+			}
+			lastTimeCommitAtRef.current = now;
+			setCommittedTime(time);
+		},
+		[playheadClock],
+	);
+	useEffect(() => {
+		isPlayingRef.current = isPlaying;
+		// Pausing lands the editor exactly on the frame being shown.
+		if (!isPlaying) setCommittedTime(playheadClock.getTime());
+	}, [isPlaying, playheadClock]);
 	const [duration, setDuration] = useState(0);
 	const [sessionShowCursorOverride, setSessionShowCursorOverride] = useState<boolean | null>(
 		null,
@@ -128,6 +166,8 @@ export function useEditorUiState(
 		setIsPlaying,
 		currentTime,
 		setCurrentTime,
+		playheadClock,
+		handlePlaybackTime,
 		duration,
 		setDuration,
 		sessionShowCursorOverride,

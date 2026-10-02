@@ -38,6 +38,7 @@ import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
 import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { VideoPlaybackRef } from "../VideoPlayback";
+import type { PlayheadClock } from "../videoPlayback/playheadClock";
 import { EditorVideoPreview } from "./EditorVideoPreview";
 
 type Props = {
@@ -49,7 +50,6 @@ type Props = {
 	previewAspectRatioValue: number;
 	videoPlaybackRef: RefObject<VideoPlaybackRef | null>;
 	timelineRef: RefObject<TimelineEditorHandle | null>;
-	currentTime: number;
 	isPlaying: boolean;
 	previewVolume: number;
 	setPreviewVolume: Dispatch<SetStateAction<number>>;
@@ -70,7 +70,8 @@ type Props = {
 	setDuration: Dispatch<SetStateAction<number>>;
 	isPreviewReady: boolean;
 	setIsPreviewReady: Dispatch<SetStateAction<boolean>>;
-	setCurrentTime: Dispatch<SetStateAction<number>>;
+	playheadClock: PlayheadClock;
+	onPlaybackTime: (time: number) => void;
 	setIsPlaying: Dispatch<SetStateAction<boolean>>;
 	setError: (message: string | null) => void;
 };
@@ -92,7 +93,6 @@ export function EditorPreviewPanel(props: Props) {
 		previewAspectRatioValue,
 		videoPlaybackRef,
 		timelineRef,
-		currentTime,
 		isPlaying,
 		previewVolume,
 		setPreviewVolume,
@@ -113,7 +113,8 @@ export function EditorPreviewPanel(props: Props) {
 		setDuration,
 		isPreviewReady,
 		setIsPreviewReady,
-		setCurrentTime,
+		playheadClock,
+		onPlaybackTime,
 		setIsPlaying,
 		setError,
 	} = props;
@@ -200,7 +201,7 @@ export function EditorPreviewPanel(props: Props) {
 									previewVersion={previewVersion}
 									aspectRatio={aspectRatio}
 									playbackRef={videoPlaybackRef}
-									currentTime={currentTime}
+									playheadClock={playheadClock}
 									isPlaying={isPlaying}
 									previewVolume={previewVolume}
 									suspendRendering={suspendRendering}
@@ -212,7 +213,7 @@ export function EditorPreviewPanel(props: Props) {
 									effectiveShowCursor={effectiveShowCursor}
 									setDuration={setDuration}
 									setIsPreviewReady={setIsPreviewReady}
-									setCurrentTime={setCurrentTime}
+									onPlaybackTime={onPlaybackTime}
 									setIsPlaying={setIsPlaying}
 									setError={setError}
 									handlers={{

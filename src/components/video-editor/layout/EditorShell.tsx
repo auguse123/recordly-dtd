@@ -357,7 +357,6 @@ export function EditorShell(props: Props) {
 						previewAspectRatioValue={previewAspectRatioValue}
 						videoPlaybackRef={ui.videoPlaybackRef}
 						timelineRef={ui.timelineRef}
-						currentTime={ui.currentTime}
 						isPlaying={ui.isPlaying}
 						previewVolume={ui.previewVolume}
 						setPreviewVolume={ui.setPreviewVolume}
@@ -378,7 +377,8 @@ export function EditorShell(props: Props) {
 						setDuration={ui.setDuration}
 						isPreviewReady={ui.isPreviewReady}
 						setIsPreviewReady={ui.setIsPreviewReady}
-						setCurrentTime={ui.setCurrentTime}
+						playheadClock={ui.playheadClock}
+						onPlaybackTime={ui.handlePlaybackTime}
 						setIsPlaying={ui.setIsPlaying}
 						setError={handlePreviewError}
 					/>
@@ -407,6 +407,7 @@ export function EditorShell(props: Props) {
 					handleAutoSuggestZoomsConsumed={handleAutoSuggestZoomsConsumed}
 					disableSuggestedZooms={!appearance.autoApplyFreshRecordingAutoZooms}
 					currentTime={ui.currentTime}
+					playheadClock={ui.playheadClock}
 					handleSelectAnnotation={handleSelectAnnotation}
 					onOpenIntroOutro={(side) => {
 						library.setOpen(false);

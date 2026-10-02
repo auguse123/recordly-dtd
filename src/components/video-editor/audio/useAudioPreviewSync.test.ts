@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createPlayheadClock } from "../videoPlayback/playheadClock";
 import { useAudioPreviewSync } from "./useAudioPreviewSync";
 
 const harness = vi.hoisted(() => ({
@@ -136,15 +137,19 @@ describe("source preview playback ownership", () => {
 			audioRegions: [],
 			previewVolume: 1,
 			isPlaying: playing,
-			currentTime: time,
-			timelineTime: time,
+			playheadClock: createPlayheadClock(time),
+			resolveFrame: () => ({
+				sourceTime: time,
+				sourcePlaybackRate: rate,
+				isSourceMuted: muted,
+				sourceGain: 1,
+				getSourceTrackGain: () => 1,
+				embeddedVideoGain: 1,
+			}),
 			duration: 10,
-			sourcePlaybackRate: rate,
 			previewSourceAudioFallbackPaths: ["/audio.system.wav"],
 			sourceAudioFallbackStartDelayMsByPath: { "/audio.system.wav": delay },
 			sourceAudioResourceVersion: 0,
-			isCurrentClipMuted: muted,
-			getSourceTrackPreviewGain: () => 1,
 			onSourceFallbackLoadError: vi.fn(),
 		});
 		for (const effect of harness.effects) effect();
@@ -152,7 +157,7 @@ describe("source preview playback ownership", () => {
 		expect(harness.loaded).toHaveBeenCalledOnce();
 		expect(audio.play).not.toHaveBeenCalled();
 		harness.effects.at(-1)?.();
-		await Promise.resolve();
+		for (let i = 0; i < 5; i++) await Promise.resolve();
 		expect(audio.play).toHaveBeenCalledTimes(plays ? 1 : 0);
 		if (plays) expect(audio.currentTime).toBeCloseTo(time - delay / 1000);
 	});

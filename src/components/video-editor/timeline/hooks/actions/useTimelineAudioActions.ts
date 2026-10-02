@@ -19,7 +19,7 @@ interface UseTimelineAudioActionsParams {
 	timeline: {
 		videoDuration: number;
 		totalMs: number;
-		currentTimeMs: number;
+		getCurrentTimeMs: () => number;
 	};
 	regions: {
 		audio: TimelineAudioRegion[];
@@ -82,7 +82,7 @@ export function useTimelineAudioActions({
 	onAudioAdded,
 	deps: depsOverrides,
 }: UseTimelineAudioActionsParams) {
-	const { videoDuration, totalMs, currentTimeMs } = timeline;
+	const { videoDuration, totalMs, getCurrentTimeMs } = timeline;
 	const { audio: audioRegions } = regions;
 	const deps = useMemo(() => buildTimelineAudioActionsDeps(depsOverrides), [depsOverrides]);
 
@@ -107,7 +107,7 @@ export function useTimelineAudioActions({
 				return;
 			}
 
-			const startPos = Math.max(0, Math.min(currentTimeMs, totalMs));
+			const startPos = Math.max(0, Math.min(getCurrentTimeMs(), totalMs));
 			if (totalMs - startPos <= 0) {
 				deps.reportError(
 					"Cannot place audio here",
@@ -137,7 +137,7 @@ export function useTimelineAudioActions({
 				placement.trackIndex,
 			);
 		},
-		[videoDuration, totalMs, onAudioAdded, deps, currentTimeMs, audioRegions],
+		[videoDuration, totalMs, onAudioAdded, deps, getCurrentTimeMs, audioRegions],
 	);
 
 	return { handleAddAudio };

@@ -5,6 +5,7 @@ import type { useAppearanceState } from "../state/useAppearanceState";
 import type { useTimelineState } from "../state/useTimelineState";
 import type { CursorTelemetryPoint, ZoomRegion } from "../types";
 import VideoPlayback, { type VideoPlaybackRef } from "../VideoPlayback";
+import { type PlayheadClock, usePlayheadTime } from "../videoPlayback/playheadClock";
 
 type PlaybackProps = ComponentProps<typeof VideoPlayback>;
 type Handlers = Pick<
@@ -22,7 +23,7 @@ type Props = {
 	previewVersion: number;
 	aspectRatio: AspectRatio;
 	playbackRef: RefObject<VideoPlaybackRef | null>;
-	currentTime: number;
+	playheadClock: PlayheadClock;
 	isPlaying: boolean;
 	previewVolume: number;
 	suspendRendering: boolean;
@@ -34,7 +35,7 @@ type Props = {
 	effectiveShowCursor: boolean;
 	setDuration: Dispatch<SetStateAction<number>>;
 	setIsPreviewReady: Dispatch<SetStateAction<boolean>>;
-	setCurrentTime: Dispatch<SetStateAction<number>>;
+	onPlaybackTime: (time: number) => void;
 	setIsPlaying: Dispatch<SetStateAction<boolean>>;
 	setError: (message: string | null) => void;
 	handlers: Handlers;
@@ -45,7 +46,7 @@ export function EditorVideoPreview({
 	previewVersion,
 	aspectRatio,
 	playbackRef,
-	currentTime,
+	playheadClock,
 	isPlaying,
 	previewVolume,
 	suspendRendering,
@@ -57,11 +58,15 @@ export function EditorVideoPreview({
 	effectiveShowCursor,
 	setDuration,
 	setIsPreviewReady,
-	setCurrentTime,
+	onPlaybackTime,
 	setIsPlaying,
 	setError,
 	handlers,
 }: Props) {
+	// Only this subtree follows the playhead every frame; the rest of the editor
+	// renders from the coarser committed time.
+	const currentTime = usePlayheadTime(playheadClock);
+	const audioFrame = audio.resolvePreviewAudioFrame(currentTime);
 	return (
 		<VideoPlayback
 			clipRegions={timeline.clipRegions}
@@ -71,7 +76,7 @@ export function EditorVideoPreview({
 			videoPath={videoPath || ""}
 			onDurationChange={setDuration}
 			onPreviewReadyChange={setIsPreviewReady}
-			onTimeUpdate={setCurrentTime}
+			onTimeUpdate={onPlaybackTime}
 			currentTime={currentTime}
 			onPlayStateChange={setIsPlaying}
 			onError={setError}
@@ -127,19 +132,7 @@ export function EditorVideoPreview({
 			cursorClickBounce={appearance.cursorClickBounce}
 			cursorClickBounceDuration={appearance.cursorClickBounceDuration}
 			cursorSway={appearance.cursorSway}
-			volume={
-				audio.shouldMutePreviewVideo || audio.isCurrentClipMuted
-					? 0
-					: Math.max(
-							0,
-							Math.min(
-								1,
-								previewVolume *
-									audio.embeddedSourcePreviewGain *
-									audio.sourceTransitionGain,
-							),
-						)
-			}
+			volume={Math.max(0, Math.min(1, previewVolume * audioFrame.embeddedVideoGain))}
 			suspendRendering={suspendRendering}
 			{...handlers}
 		/>

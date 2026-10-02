@@ -14,6 +14,7 @@ import type { IntroOutroSide } from "../introOutro";
 import type { useTimelineState } from "../state/useTimelineState";
 import { IntroOutroTimelineBlock } from "../timeline/IntroOutroTimelineBlock";
 import TimelineEditor, { type TimelineEditorHandle } from "../timeline/TimelineEditor";
+import type { PlayheadClock } from "../videoPlayback/playheadClock";
 
 type Props = {
 	panelRef?: RefObject<HTMLDivElement | null>;
@@ -40,6 +41,7 @@ type Props = {
 	handleAutoSuggestZoomsConsumed: () => void;
 	disableSuggestedZooms: boolean;
 	currentTime: number;
+	playheadClock: PlayheadClock;
 	handleSelectAnnotation: (id: string | null) => void;
 	onOpenIntroOutro: (side: IntroOutroSide) => void;
 };
@@ -68,6 +70,7 @@ export function EditorTimelinePanel(props: Props) {
 		handleAutoSuggestZoomsConsumed,
 		disableSuggestedZooms,
 		currentTime,
+		playheadClock,
 		handleSelectAnnotation,
 		onOpenIntroOutro,
 	} = props;
@@ -92,6 +95,7 @@ export function EditorTimelinePanel(props: Props) {
 						videoDuration={projection.timelineDuration}
 						currentTime={currentTime}
 						playheadTime={projection.timelinePlayheadTime}
+						playheadClock={playheadClock}
 						onSeek={playback.handleTimelineSeek}
 						videoPath={videoPath}
 						videoSourcePath={videoSourcePath}

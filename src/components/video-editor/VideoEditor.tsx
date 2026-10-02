@@ -286,6 +286,7 @@ export default function VideoEditor() {
 		currentSourcePath,
 		duration,
 		currentTime,
+		playheadClock: ui.playheadClock,
 		isPlaying,
 		previewVolume,
 		introOutro: exportSettings.introOutro,

@@ -2,6 +2,8 @@ import { useTimelineContext } from "dnd-timeline";
 import { type RefObject, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { TimelineMarks } from "../../../editTools";
+import type { PlayheadClock } from "../../../videoPlayback/playheadClock";
+import { useLivePlayheadMs } from "../../../videoPlayback/playheadClock";
 import {
 	type ClipPresentation,
 	getPlayheadDisplayTime,
@@ -12,6 +14,8 @@ import { formatPlayheadTime } from "../../core/time";
 interface PlaybackCursorProps {
 	clips: ClipPresentation[];
 	currentTimeMs: number;
+	/** When given, the cursor follows it every frame instead of `currentTimeMs`. */
+	playheadClock?: PlayheadClock;
 	videoDurationMs: number;
 	onSeek?: (time: number) => void;
 	timelineRef: RefObject<HTMLDivElement | null>;
@@ -26,7 +30,8 @@ const EDIT_SNAP_PX = 8;
 
 export default function PlaybackCursor({
 	clips,
-	currentTimeMs,
+	currentTimeMs: committedTimeMs,
+	playheadClock,
 	videoDurationMs,
 	onSeek,
 	timelineRef,
@@ -35,6 +40,7 @@ export default function PlaybackCursor({
 	isLoading = false,
 }: PlaybackCursorProps) {
 	const { sidebarWidth, direction, range, valueToPixels, pixelsToValue } = useTimelineContext();
+	const currentTimeMs = useLivePlayheadMs(playheadClock, committedTimeMs);
 	const sideProperty = direction === "rtl" ? "right" : "left";
 	const [isDragging, setIsDragging] = useState(false);
 	const [isHovered, setIsHovered] = useState(false);

@@ -10,6 +10,7 @@ import {
 	type TimelineMarks,
 } from "../editTools";
 import type { ClipRegion } from "../types";
+import type { PlayheadClock } from "../videoPlayback/playheadClock";
 
 /** How often the J shuttle steps the playhead back. */
 const SHUTTLE_TICK_MS = 100;
@@ -53,6 +54,8 @@ type Input = {
 	clipRegions: ClipRegion[];
 	/** Edited timeline, seconds. */
 	playheadSec: number;
+	/** Frame-accurate playhead; `playheadSec` may lag behind it while playing. */
+	playheadClock?: PlayheadClock;
 	durationSec: number;
 	isPreviewPlaying: boolean;
 	startPlayback: () => void;
@@ -100,11 +103,11 @@ export function useEditingShortcuts(input: Input) {
 			current.speed = Math.min(MAX_SHUTTLE_SPEED, current.speed * 2);
 			return;
 		}
-		const { playheadSec, isPreviewPlaying, togglePlayPause } = latest.current;
+		const { playheadSec, playheadClock, isPreviewPlaying, togglePlayPause } = latest.current;
 		if (isPreviewPlaying) togglePlayPause();
 		const shuttle = {
 			speed: 1,
-			positionSec: playheadSec,
+			positionSec: playheadClock ? playheadClock.getTime() : playheadSec,
 			timer: window.setInterval(() => {
 				const active = shuttleRef.current;
 				if (!active) return;
@@ -134,7 +137,8 @@ export function useEditingShortcuts(input: Input) {
 			if (isKeyOwnedByTarget(event.target)) return;
 			const now = latest.current;
 			const { shortcuts, isMac } = now;
-			const playheadMs = now.playheadSec * 1000;
+			const playheadMs =
+				(now.playheadClock ? now.playheadClock.getTime() : now.playheadSec) * 1000;
 			const durationMs = now.durationSec * 1000;
 			const seekTo = (ms: number) => {
 				stopShuttle();

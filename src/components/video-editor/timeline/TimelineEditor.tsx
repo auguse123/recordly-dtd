@@ -1,5 +1,5 @@
 import type { Span } from "dnd-timeline";
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "@/components/ui/icons";
 import type {
 	SourceAudioTrackMeta,
@@ -20,6 +20,7 @@ import type {
 	ZoomFocus,
 	ZoomRegion,
 } from "../types";
+import type { PlayheadClock } from "../videoPlayback/playheadClock";
 import KeyframeMarkers from "./components/markers/KeyframeMarkers";
 import TimelineCanvas from "./components/viewport/TimelineCanvas";
 import TimelineWrapper from "./components/wrapper/TimelineWrapper";
@@ -37,6 +38,8 @@ export interface TimelineEditorProps {
 	videoDuration: number;
 	currentTime: number;
 	playheadTime?: number;
+	/** Frame-accurate playhead: drives the cursor and the "at playhead" actions. */
+	playheadClock?: PlayheadClock;
 	onSeek?: (time: number) => void;
 	cursorTelemetry?: CursorTelemetryPoint[];
 	autoSuggestZoomsTrigger?: number;
@@ -129,6 +132,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			videoDuration,
 			currentTime,
 			playheadTime,
+			playheadClock,
 			onSeek,
 			cursorTelemetry = [],
 			autoSuggestZoomsTrigger = 0,
@@ -197,6 +201,17 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 		const currentTimeMs = useMemo(
 			() => Math.round((playheadTime ?? currentTime) * 1000),
 			[currentTime, playheadTime],
+		);
+		// Actions read the playhead when they run, so a split or an insert made
+		// during playback lands on the frame on screen, not the last React commit.
+		const committedTimeMsRef = useRef(currentTimeMs);
+		committedTimeMsRef.current = currentTimeMs;
+		const getCurrentTimeMs = useCallback(
+			() =>
+				playheadClock
+					? Math.round(playheadClock.getTime() * 1000)
+					: committedTimeMsRef.current,
+			[playheadClock],
 		);
 		const timelineScale = useMemo(() => calculateTimelineScale(videoDuration), [videoDuration]);
 		const safeMinDurationMs = useMemo(
@@ -378,6 +393,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			videoDuration,
 			totalMs,
 			currentTimeMs,
+			getCurrentTimeMs,
 			safeMinDurationMs,
 			cursorTelemetry,
 			autoSuggestZoomsTrigger,
@@ -511,6 +527,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 							items={timelineItems}
 							videoDurationMs={totalMs}
 							currentTimeMs={currentTimeMs}
+							playheadClock={playheadClock}
 							marks={marks}
 							onSeek={onSeek}
 							onAddZoomAtMs={addZoomAtMs}

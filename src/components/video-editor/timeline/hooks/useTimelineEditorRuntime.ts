@@ -27,6 +27,8 @@ interface UseTimelineEditorRuntimeParams {
 	videoDuration: number;
 	totalMs: number;
 	currentTimeMs: number;
+	/** Exact playhead at call time, for actions that insert at the playhead. */
+	getCurrentTimeMs: () => number;
 	safeMinDurationMs: number;
 	cursorTelemetry: CursorTelemetryPoint[];
 	autoSuggestZoomsTrigger: number;
@@ -80,6 +82,7 @@ export function useTimelineEditorRuntime({
 	videoDuration,
 	totalMs,
 	currentTimeMs,
+	getCurrentTimeMs,
 	safeMinDurationMs,
 	cursorTelemetry,
 	autoSuggestZoomsTrigger,
@@ -219,7 +222,7 @@ export function useTimelineEditorRuntime({
 		handleAddZoom,
 		handleSuggestZooms,
 	} = useTimelineZoomActions({
-		timeline: { videoDuration, totalMs, currentTimeMs },
+		timeline: { videoDuration, totalMs, getCurrentTimeMs },
 		regions: { zoom: zoomRegions, clip: clipRegions },
 		cursorTelemetry,
 		options: { disableSuggestedZooms },
@@ -240,11 +243,11 @@ export function useTimelineEditorRuntime({
 		if (!videoDuration || videoDuration === 0 || totalMs === 0 || !onClipSplit) {
 			return;
 		}
-		onClipSplit(currentTimeMs);
-	}, [videoDuration, totalMs, currentTimeMs, onClipSplit]);
+		onClipSplit(getCurrentTimeMs());
+	}, [videoDuration, totalMs, getCurrentTimeMs, onClipSplit]);
 
 	const { handleAddAudio } = useTimelineAudioActions({
-		timeline: { videoDuration, totalMs, currentTimeMs },
+		timeline: { videoDuration, totalMs, getCurrentTimeMs },
 		regions: { audio: audioRegions },
 		onAudioAdded,
 	});
@@ -261,11 +264,11 @@ export function useTimelineEditorRuntime({
 			}
 
 			const latestStartPos = Math.max(0, totalMs - defaultDuration);
-			const startPos = Math.max(0, Math.min(currentTimeMs, latestStartPos));
+			const startPos = Math.max(0, Math.min(getCurrentTimeMs(), latestStartPos));
 			const endPos = Math.min(startPos + defaultDuration, totalMs);
 			onAnnotationAdded({ start: startPos, end: endPos }, trackIndex);
 		},
-		[videoDuration, totalMs, currentTimeMs, defaultRegionDurationMs, onAnnotationAdded],
+		[videoDuration, totalMs, getCurrentTimeMs, defaultRegionDurationMs, onAnnotationAdded],
 	);
 
 	useTimelineKeyboardShortcuts({

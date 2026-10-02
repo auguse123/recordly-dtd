@@ -3,7 +3,8 @@ import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/a
 import { resolveSourceTrackRoutingPolicy } from "@/lib/exporter/sourceTrackRoutingPolicy";
 import { getGainAt, getTransitionGainEnvelope, resolveClipTransitions } from "../clipTransitions";
 import type { AudioRegion, ClipRegion } from "../types";
-import { findClipAtTimelineTime } from "../types";
+import { findClipAtTimelineTime, mapTimelineTimeToSourceTime } from "../types";
+import type { PlayheadClock } from "../videoPlayback/playheadClock";
 import { isClipMutedById } from "./clipAudio";
 import {
 	findAudioClipAt,
@@ -11,7 +12,7 @@ import {
 	getAudioClipVolume,
 	resolveAudioClipSync,
 } from "./detachedAudio";
-import { useAudioPreviewSync } from "./useAudioPreviewSync";
+import { type PreviewAudioFrame, useAudioPreviewSync } from "./useAudioPreviewSync";
 import { useClipAudioSettingsController } from "./useClipAudioSettingsController";
 import { useMusicDuckingEnvelopes } from "./useMusicDuckingEnvelopes";
 import { useSourceAudioFallback } from "./useSourceAudioFallback";
@@ -46,8 +47,10 @@ interface UseVideoEditorAudioParams {
 	setDefaultSourceAudioTrackSettings: React.Dispatch<
 		React.SetStateAction<SourceAudioTrackSettings>
 	>;
-	currentTime: number;
+	/** Timeline time committed to React state (coarse while playing). */
 	timelineTime: number;
+	/** Frame-accurate playhead the preview audio follows. */
+	playheadClock: PlayheadClock;
 	duration: number;
 	isPlaying: boolean;
 	previewVolume: number;
@@ -66,8 +69,8 @@ export function useVideoEditorAudio({
 	setSourceAudioTrackSettingsByClip,
 	defaultSourceAudioTrackSettings,
 	setDefaultSourceAudioTrackSettings,
-	currentTime,
 	timelineTime,
+	playheadClock,
 	duration,
 	isPlaying,
 	previewVolume,
@@ -105,11 +108,6 @@ export function useVideoEditorAudio({
 		() => (audioClipRegions ? resolveAudioClipSync(audioClipRegions) : null),
 		[audioClipRegions],
 	);
-	const activeAudioClip = useMemo(
-		() =>
-			playbackAudioClips ? findAudioClipAt(timelineTime * 1000, playbackAudioClips) : null,
-		[playbackAudioClips, timelineTime],
-	);
 
 	const activeClipIdAtCurrentTime = useMemo(
 		() => findClipAtTimelineTime(timelineTime * 1000, clipRegions)?.id ?? null,
@@ -127,21 +125,6 @@ export function useVideoEditorAudio({
 		[clipRegions],
 	);
 	const sourceTransitionGain = getGainAt(transitionGainEnvelope, timelineTime * 1000);
-	const isSourceAudioMuted = isAudioDetached
-		? !activeAudioClip || Boolean(activeAudioClip.muted)
-		: isCurrentClipMuted;
-	const sourceAudioGain = isAudioDetached
-		? activeAudioClip
-			? getAudioClipVolume(activeAudioClip)
-			: 0
-		: sourceTransitionGain;
-	const sourceAudioTime =
-		isAudioDetached && activeAudioClip
-			? getAudioClipSourceTimeMs(activeAudioClip, timelineTime * 1000) / 1000
-			: currentTime;
-	const sourceAudioPlaybackRate = isAudioDetached
-		? (activeAudioClip?.speed ?? 1)
-		: (findClipAtTimelineTime(timelineTime * 1000, clipRegions)?.speed ?? 1);
 
 	const {
 		sourceAudioTrackMeta,
@@ -153,6 +136,7 @@ export function useVideoEditorAudio({
 		onSelectedClipSourceAudioTrackNormalizeChange,
 		embeddedSourcePreviewGain,
 		getSourceTrackPreviewGain,
+		getClipPreviewGains,
 	} = useClipAudioSettingsController({
 		selectedClipId,
 		activeClipId: activeClipIdAtCurrentTime,
@@ -166,16 +150,60 @@ export function useVideoEditorAudio({
 		() => sourceAudioFallbackPaths.find((path) => path.includes(".mic.")) ?? null,
 		[sourceAudioFallbackPaths],
 	);
-	const getPreviewSourceTrackGain = useMemo(
-		() =>
-			embeddedSourceAudioPath
+	// Everything the preview sound needs at one playhead position, resolved per frame
+	// from the clock rather than from React state (which only follows it coarsely).
+	const resolvePreviewAudioFrame = useMemo(() => {
+		let lastTime = Number.NaN;
+		let lastFrame: PreviewAudioFrame | null = null;
+		return (timelineSec: number): PreviewAudioFrame => {
+			if (lastFrame && timelineSec === lastTime) return lastFrame;
+			const timelineMs = timelineSec * 1000;
+			const videoClip = findClipAtTimelineTime(timelineMs, clipRegions);
+			const audioClip = playbackAudioClips
+				? findAudioClipAt(timelineMs, playbackAudioClips)
+				: null;
+			const isVideoClipMuted = !videoClip || isClipMutedById(videoClip.id, clipRegions);
+			const transitionGain = getGainAt(transitionGainEnvelope, timelineMs);
+			const gains = getClipPreviewGains(videoClip?.id ?? null);
+			const getSourceTrackGain = embeddedSourceAudioPath
 				? (path: string) =>
-						path === embeddedSourceAudioPath
-							? embeddedSourcePreviewGain
-							: getSourceTrackPreviewGain(path)
-				: getSourceTrackPreviewGain,
-		[embeddedSourceAudioPath, embeddedSourcePreviewGain, getSourceTrackPreviewGain],
-	);
+						path === embeddedSourceAudioPath ? gains.embedded : gains.forPath(path)
+				: gains.forPath;
+			const frame: PreviewAudioFrame = {
+				sourceTime:
+					audioClip !== null
+						? getAudioClipSourceTimeMs(audioClip, timelineMs) / 1000
+						: mapTimelineTimeToSourceTime(timelineMs, clipRegions) / 1000,
+				sourcePlaybackRate: isAudioDetached
+					? (audioClip?.speed ?? 1)
+					: (videoClip?.speed ?? 1),
+				isSourceMuted: isAudioDetached
+					? !audioClip || Boolean(audioClip.muted)
+					: isVideoClipMuted,
+				sourceGain: isAudioDetached
+					? audioClip
+						? getAudioClipVolume(audioClip)
+						: 0
+					: transitionGain,
+				getSourceTrackGain,
+				embeddedVideoGain:
+					shouldMutePreviewVideo || isVideoClipMuted
+						? 0
+						: Math.max(0, Math.min(1, gains.embedded * transitionGain)),
+			};
+			lastTime = timelineSec;
+			lastFrame = frame;
+			return frame;
+		};
+	}, [
+		clipRegions,
+		embeddedSourceAudioPath,
+		getClipPreviewGains,
+		isAudioDetached,
+		playbackAudioClips,
+		shouldMutePreviewVideo,
+		transitionGainEnvelope,
+	]);
 
 	const userTrackGainEnvelopes = useMusicDuckingEnvelopes({
 		audioRegions,
@@ -190,18 +218,14 @@ export function useVideoEditorAudio({
 		audioRegions,
 		previewVolume,
 		isPlaying,
-		currentTime: sourceAudioTime,
-		timelineTime,
+		playheadClock,
+		resolveFrame: resolvePreviewAudioFrame,
 		duration,
-		sourcePlaybackRate: sourceAudioPlaybackRate,
 		previewSourceAudioFallbackPaths,
 		sourceAudioFallbackStartDelayMsByPath,
 		sourceAudioResourceVersion: sourceAudioFallbackRefreshKey,
-		isCurrentClipMuted: isSourceAudioMuted,
 		embeddedSourceAudioPath,
-		sourceTransitionGain: sourceAudioGain,
 		userTrackGainEnvelopes,
-		getSourceTrackPreviewGain: getPreviewSourceTrackGain,
 		onSourceFallbackLoadError,
 	});
 
@@ -217,6 +241,7 @@ export function useVideoEditorAudio({
 		activeSourceAudioTrackSettings,
 		selectedClipSourceAudioTrackSettings,
 		playSourceAudioPreview,
+		resolvePreviewAudioFrame,
 		getSourceAudioTrackSettingsForClip,
 		onSourceAudioTracksMetaChange,
 		onSelectedClipSourceAudioTrackVolumeChange,

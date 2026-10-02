@@ -3,8 +3,8 @@ import {
 	SOURCE_AUDIO_NORMALIZE_GAIN,
 	type SourceAudioTrackSettings,
 } from "@/components/video-editor/audio/audioTypes";
-import { useSourceAudioTrackSettings } from "./useSourceAudioTrackSettings";
 import { getSourceTrackIdFromPath } from "@/lib/exporter/audioRoutingEngine";
+import { useSourceAudioTrackSettings } from "./useSourceAudioTrackSettings";
 
 interface UseClipAudioSettingsControllerParams {
 	selectedClipId: string | null;
@@ -67,16 +67,29 @@ export function useClipAudioSettingsController({
 	}, [embeddedTrackId, previewSourceAudioTrackSettings]);
 
 	const getSourceTrackPreviewGain = useCallback(
-		(audioPath: string) => {
-			const trackId = getSourceTrackIdFromPath(audioPath);
-			const settings = previewSourceAudioTrackSettings[trackId] ?? {
-				volume: 1,
-				normalize: false,
-			};
-			const normalizeGain = settings.normalize ? SOURCE_AUDIO_NORMALIZE_GAIN : 1;
-			return Math.max(0, Math.min(1, settings.volume * normalizeGain));
-		},
+		(audioPath: string) =>
+			getTrackPreviewGain(
+				previewSourceAudioTrackSettings,
+				getSourceTrackIdFromPath(audioPath),
+			),
 		[previewSourceAudioTrackSettings],
+	);
+
+	/**
+	 * Preview gains of any clip, for code that follows the playhead frame by frame
+	 * instead of re-rendering with `activeClipId`. Falls back like the hook does:
+	 * no clip under the playhead means the selected clip's settings.
+	 */
+	const getClipPreviewGains = useCallback(
+		(clipId: string | null) => {
+			const settings = getSourceAudioTrackSettingsForClip(clipId ?? selectedClipId);
+			return {
+				embedded: getTrackPreviewGain(settings, embeddedTrackId),
+				forPath: (audioPath: string) =>
+					getTrackPreviewGain(settings, getSourceTrackIdFromPath(audioPath)),
+			};
+		},
+		[embeddedTrackId, getSourceAudioTrackSettingsForClip, selectedClipId],
 	);
 
 	return {
@@ -89,5 +102,15 @@ export function useClipAudioSettingsController({
 		onSelectedClipSourceAudioTrackNormalizeChange,
 		embeddedSourcePreviewGain,
 		getSourceTrackPreviewGain,
+		getClipPreviewGains,
 	};
+}
+
+function getTrackPreviewGain(settings: SourceAudioTrackSettings, trackId: string): number {
+	const track = settings[trackId] ?? {
+		volume: 1,
+		normalize: false,
+	};
+	const normalizeGain = track.normalize ? SOURCE_AUDIO_NORMALIZE_GAIN : 1;
+	return Math.max(0, Math.min(1, track.volume * normalizeGain));
 }

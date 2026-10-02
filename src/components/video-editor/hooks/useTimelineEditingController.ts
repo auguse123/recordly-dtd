@@ -11,6 +11,7 @@ import type { TimelineEditorHandle } from "../timeline/TimelineEditor";
 import type { EditorEffectSection } from "../types";
 import type { VideoPlaybackRef } from "../VideoPlayback";
 import { getErrorMessage, summarizeErrorMessage } from "../videoEditorUtils";
+import type { PlayheadClock } from "../videoPlayback/playheadClock";
 import { useAnnotationRegionCommands } from "./useAnnotationRegionCommands";
 import { useAudioClipCommands } from "./useAudioClipCommands";
 import { useAudioRegionCommands } from "./useAudioRegionCommands";
@@ -37,6 +38,8 @@ type Input = {
 	currentSourcePath: string | null;
 	duration: number;
 	currentTime: number;
+	/** Frame-accurate playhead; `currentTime` only follows it coarsely while playing. */
+	playheadClock: PlayheadClock;
 	isPlaying: boolean;
 	previewVolume: number;
 	introOutro: IntroOutroSettings;
@@ -99,7 +102,7 @@ export function useTimelineEditingController(input: Input) {
 		defaultSourceAudioTrackSettings: timeline.defaultSourceAudioTrackSettings,
 		setDefaultSourceAudioTrackSettings: timeline.setDefaultSourceAudioTrackSettings,
 		timelineTime: projection.timelinePlayheadTime,
-		currentTime: projection.mapTimelineTimeToSourceTime(input.currentTime * 1000) / 1000,
+		playheadClock: input.playheadClock,
 		duration: input.duration,
 		isPlaying: input.isPlaying,
 		previewVolume: input.previewVolume,
@@ -111,7 +114,7 @@ export function useTimelineEditingController(input: Input) {
 		videoPlaybackRef: input.videoPlaybackRef,
 		timelineRef: input.timelineRef,
 		playSourceAudioPreview: audio.playSourceAudioPreview,
-		timelinePlayheadTime: projection.timelinePlayheadTime,
+		playheadClock: input.playheadClock,
 		timelineDuration: projection.timelineDuration,
 	});
 	const playback = useIntroOutroPreview({
@@ -277,6 +280,7 @@ export function useTimelineEditingController(input: Input) {
 		videoPath: input.videoPath,
 		clipRegions: timeline.clipRegions,
 		playheadSec: projection.timelinePlayheadTime,
+		playheadClock: input.playheadClock,
 		durationSec: projection.timelineDuration,
 		isPreviewPlaying: playback.isPreviewPlaying,
 		startPlayback: playback.startPlayback,

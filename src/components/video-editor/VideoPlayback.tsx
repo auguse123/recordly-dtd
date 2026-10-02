@@ -197,6 +197,34 @@ type PixiRendererAttempt = {
 };
 const PIXI_RENDERER_INIT_TIMEOUT_MS = 8_000;
 
+let captionMeasureContext: CanvasRenderingContext2D | null | undefined;
+const MAX_CACHED_CAPTION_WIDTHS = 2_000;
+
+/**
+ * Text measurer for caption layout. Shares one canvas context and remembers
+ * widths per font, so re-laying captions every frame costs no DOM allocation.
+ */
+function createCaptionTextMeasurer(font: string): ((text: string) => number) | null {
+	if (captionMeasureContext === undefined) {
+		captionMeasureContext =
+			typeof document === "undefined"
+				? null
+				: document.createElement("canvas").getContext("2d");
+	}
+	const context = captionMeasureContext;
+	if (!context) return null;
+	const widths = new Map<string, number>();
+	return (text) => {
+		const cached = widths.get(text);
+		if (cached !== undefined) return cached;
+		context.font = font;
+		const width = context.measureText(text).width;
+		if (widths.size >= MAX_CACHED_CAPTION_WIDTHS) widths.clear();
+		widths.set(text, width);
+		return width;
+	};
+}
+
 function toRendererErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error ?? "Unknown renderer init error");
 }
@@ -607,42 +635,40 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			[],
 		);
 
-		const activeCaptionLayout = useMemo(() => {
-			if (
-				!autoCaptionSettings?.enabled ||
-				autoCaptions.length === 0 ||
-				typeof document === "undefined"
-			) {
-				return null;
-			}
-
-			const overlayWidth = overlayRef.current?.clientWidth || 960;
+		const overlayWidthForCaptions = overlayRef.current?.clientWidth || 960;
+		const captionMeasure = useMemo(() => {
+			if (!autoCaptionSettings?.enabled) return null;
 			const fontSize = getCaptionScaledFontSize(
 				autoCaptionSettings.fontSize,
-				overlayWidth,
+				overlayWidthForCaptions,
 				autoCaptionSettings.maxWidth,
 			);
-			const maxTextWidthPx = getCaptionTextMaxWidth(
-				overlayWidth,
-				autoCaptionSettings.maxWidth,
-				fontSize,
+			const measureText = createCaptionTextMeasurer(
+				`${CAPTION_FONT_WEIGHT} ${fontSize}px ${autoCaptionSettings.fontFamily || getDefaultCaptionFontFamily()}`,
 			);
-			const measurementCanvas = document.createElement("canvas");
-			const measurementContext = measurementCanvas.getContext("2d");
-			if (!measurementContext) {
+			if (!measureText) return null;
+			return {
+				measureText,
+				maxTextWidthPx: getCaptionTextMaxWidth(
+					overlayWidthForCaptions,
+					autoCaptionSettings.maxWidth,
+					fontSize,
+				),
+			};
+		}, [autoCaptionSettings, overlayWidthForCaptions]);
+		const activeCaptionLayout = useMemo(() => {
+			if (!autoCaptionSettings?.enabled || autoCaptions.length === 0 || !captionMeasure) {
 				return null;
 			}
-
-			measurementContext.font = `${CAPTION_FONT_WEIGHT} ${fontSize}px ${autoCaptionSettings.fontFamily || getDefaultCaptionFontFamily()}`;
 
 			return buildActiveCaptionLayout({
 				cues: autoCaptions,
 				timeMs: Math.round(currentTime * 1000),
 				settings: autoCaptionSettings,
-				maxWidthPx: maxTextWidthPx,
-				measureText: (text) => measurementContext.measureText(text).width,
+				maxWidthPx: captionMeasure.maxTextWidthPx,
+				measureText: captionMeasure.measureText,
 			});
-		}, [autoCaptionSettings, autoCaptions, currentTime]);
+		}, [autoCaptionSettings, autoCaptions, captionMeasure, currentTime]);
 		const isCaptionEditing = captionEditSession !== null;
 		const captionEditDraft = captionEditSession?.draft ?? "";
 		const captionEditTargetId = captionEditSession?.target.id ?? null;

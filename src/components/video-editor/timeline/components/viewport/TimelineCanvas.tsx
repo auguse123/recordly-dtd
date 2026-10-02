@@ -16,6 +16,7 @@ import type {
 } from "@/components/video-editor/audio/audioTypes";
 import { cn } from "@/lib/utils";
 import type { TimelineMarks } from "../../../editTools";
+import type { PlayheadClock } from "../../../videoPlayback/playheadClock";
 import {
 	type ClipPresentation,
 	getEmbeddedCaptionSpan,
@@ -62,6 +63,7 @@ interface TimelineCanvasProps {
 	items: TimelineRenderItem[];
 	videoDurationMs: number;
 	currentTimeMs: number;
+	playheadClock?: PlayheadClock;
 	marks?: TimelineMarks;
 	onSeek?: (time: number) => void;
 	canPlaceZoomAtMs?: (startMs: number) => boolean;
@@ -966,6 +968,7 @@ export default function TimelineCanvas({
 	items,
 	videoDurationMs,
 	currentTimeMs,
+	playheadClock,
 	marks,
 	onSeek,
 	onAddZoomAtMs,
@@ -1235,6 +1238,7 @@ export default function TimelineCanvas({
 			<PlaybackCursor
 				clips={clipPresentation}
 				currentTimeMs={currentTimeMs}
+				playheadClock={playheadClock}
 				videoDurationMs={videoDurationMs}
 				onSeek={onSeek}
 				timelineRef={localTimelineRef}
