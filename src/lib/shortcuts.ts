@@ -5,6 +5,13 @@ export const SHORTCUT_ACTIONS = [
 	"addKeyframe",
 	"deleteSelected",
 	"playPause",
+	"playReverse",
+	"stopPlayback",
+	"playForward",
+	"markIn",
+	"markOut",
+	"trimHeadToPlayhead",
+	"trimTailToPlayhead",
 ] as const;
 
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
@@ -21,24 +28,66 @@ export type ShortcutsConfig = Record<ShortcutAction, ShortcutBinding>;
 
 export interface FixedShortcut {
 	label: string;
+	/** `shortcuts:actions.*` key for the translated label. */
+	labelKey?: string;
 	display: string;
 	bindings: ShortcutBinding[];
 }
 
 export const FIXED_SHORTCUTS: FixedShortcut[] = [
-	{ label: "Cycle Annotations Forward", display: "Tab", bindings: [{ key: "tab" }] },
+	{
+		label: "Cycle Annotations Forward",
+		labelKey: "cycleForward",
+		display: "Tab",
+		bindings: [{ key: "tab" }],
+	},
 	{
 		label: "Cycle Annotations Backward",
+		labelKey: "cycleBackward",
 		display: "Shift + Tab",
 		bindings: [{ key: "tab", shift: true }],
 	},
 	{
 		label: "Delete Selected (alt)",
+		labelKey: "deleteSelectedAlt",
 		display: "Del / ⌫",
 		bindings: [{ key: "delete" }, { key: "backspace" }],
 	},
-	{ label: "Pan Timeline", display: "Shift + Scroll", bindings: [] },
-	{ label: "Zoom Timeline", display: "Ctrl + Scroll", bindings: [] },
+	{
+		label: "Split at Playhead (alt)",
+		labelKey: "splitClipAlt",
+		display: "⌘ / Ctrl + B",
+		bindings: [{ key: "b", ctrl: true }],
+	},
+	{
+		label: "Previous / Next Frame",
+		labelKey: "stepFrame",
+		display: "← / →",
+		bindings: [{ key: "arrowleft" }, { key: "arrowright" }],
+	},
+	{
+		label: "Back / Forward 1 Second",
+		labelKey: "stepSecond",
+		display: "Shift + ← / →",
+		bindings: [
+			{ key: "arrowleft", shift: true },
+			{ key: "arrowright", shift: true },
+		],
+	},
+	{
+		label: "Previous / Next Cut",
+		labelKey: "jumpToCut",
+		display: "↑ / ↓",
+		bindings: [{ key: "arrowup" }, { key: "arrowdown" }],
+	},
+	{
+		label: "Clear In / Out",
+		labelKey: "clearMarks",
+		display: "Alt + X",
+		bindings: [{ key: "x", alt: true }],
+	},
+	{ label: "Pan Timeline", labelKey: "panTimeline", display: "Shift + Scroll", bindings: [] },
+	{ label: "Zoom Timeline", labelKey: "zoomTimeline", display: "Ctrl + Scroll", bindings: [] },
 ];
 
 export type ShortcutConflict =
@@ -79,6 +128,13 @@ export const DEFAULT_SHORTCUTS: ShortcutsConfig = {
 	addKeyframe: { key: "f" },
 	deleteSelected: { key: "d", ctrl: true },
 	playPause: { key: " " },
+	playReverse: { key: "j" },
+	stopPlayback: { key: "k" },
+	playForward: { key: "l" },
+	markIn: { key: "i" },
+	markOut: { key: "o" },
+	trimHeadToPlayhead: { key: "q" },
+	trimTailToPlayhead: { key: "w" },
 };
 
 export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
@@ -88,6 +144,13 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
 	addKeyframe: "Add Keyframe",
 	deleteSelected: "Delete Selected",
 	playPause: "Play / Pause",
+	playReverse: "Play Backwards",
+	stopPlayback: "Stop",
+	playForward: "Play Forwards",
+	markIn: "Mark In",
+	markOut: "Mark Out",
+	trimHeadToPlayhead: "Cut Clip Start to Playhead",
+	trimTailToPlayhead: "Cut Clip End from Playhead",
 };
 
 export function matchesShortcut(

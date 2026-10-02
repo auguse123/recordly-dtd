@@ -16,6 +16,7 @@ import { useAudioRegionCommands } from "./useAudioRegionCommands";
 import { useCaptionCommands } from "./useCaptionCommands";
 import { useClipRegionCommands } from "./useClipRegionCommands";
 import { useCursorTelemetry } from "./useCursorTelemetry";
+import { useEditingShortcuts } from "./useEditingShortcuts";
 import { useEditorGlobalInteractions } from "./useEditorGlobalInteractions";
 import { useEditorPlaybackControls } from "./useEditorPlaybackControls";
 import { useFreshRecordingAutoZoom } from "./useFreshRecordingAutoZoom";
@@ -232,6 +233,21 @@ export function useTimelineEditingController(input: Input) {
 		handleRedo: input.handleRedo,
 		togglePlayPause: playback.togglePlayPause,
 	});
+	const editTools = useEditingShortcuts({
+		shortcuts: input.shortcuts,
+		isMac: input.isMac,
+		videoPath: input.videoPath,
+		clipRegions: timeline.clipRegions,
+		playheadSec: projection.timelinePlayheadTime,
+		durationSec: projection.timelineDuration,
+		isPreviewPlaying: playback.isPreviewPlaying,
+		startPlayback: playback.startPlayback,
+		togglePlayPause: playback.togglePlayPause,
+		handleSeek: playback.handleSeek,
+		handleClipSplit: clipCommands.handleClipSplit,
+		handleRemoveRange: clipCommands.handleRemoveRange,
+		handleTrimToPlayhead: clipCommands.handleTrimToPlayhead,
+	});
 
 	return {
 		cursor,
@@ -243,6 +259,7 @@ export function useTimelineEditingController(input: Input) {
 		clipCommands,
 		audioCommands,
 		annotationCommands,
+		editTools,
 		handleSelectAnnotation,
 		handleAutoSuggestZoomsConsumed: freshZoom.handleAutoSuggestZoomsConsumed,
 	};

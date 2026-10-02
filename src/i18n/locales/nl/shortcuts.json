@@ -11,6 +11,19 @@
 		"cycleBackward": "Annotaties achteruit doorlopen",
 		"deleteSelectedAlt": "Selectie verwijderen (alt)",
 		"panTimeline": "Tijdlijn verschuiven",
-		"zoomTimeline": "Tijdlijn zoomen"
+		"zoomTimeline": "Tijdlijn zoomen",
+		"splitClip": "Split Clip",
+		"playReverse": "Play Backwards (repeat = faster)",
+		"stopPlayback": "Stop",
+		"playForward": "Play Forwards",
+		"markIn": "Mark In",
+		"markOut": "Mark Out",
+		"trimHeadToPlayhead": "Cut Clip Start to Playhead",
+		"trimTailToPlayhead": "Cut Clip End from Playhead",
+		"splitClipAlt": "Split Clip (alt)",
+		"stepFrame": "Previous / Next Frame",
+		"stepSecond": "Back / Forward 1 Second",
+		"jumpToCut": "Previous / Next Cut",
+		"clearMarks": "Clear In / Out Marks"
 	}
 }

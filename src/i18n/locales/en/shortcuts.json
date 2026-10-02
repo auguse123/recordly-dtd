@@ -5,12 +5,25 @@
 		"addSpeed": "Add Speed",
 		"addAnnotation": "Add Annotation",
 		"addKeyframe": "Add Keyframe",
-		"deleteSelected": "Delete Selected",
+		"deleteSelected": "Delete Selected / In-Out Range",
 		"playPause": "Play / Pause",
 		"cycleForward": "Cycle Annotations Forward",
 		"cycleBackward": "Cycle Annotations Backward",
 		"deleteSelectedAlt": "Delete Selected (alt)",
 		"panTimeline": "Pan Timeline",
-		"zoomTimeline": "Zoom Timeline"
+		"zoomTimeline": "Zoom Timeline",
+		"splitClip": "Split Clip",
+		"playReverse": "Play Backwards (repeat = faster)",
+		"stopPlayback": "Stop",
+		"playForward": "Play Forwards",
+		"markIn": "Mark In",
+		"markOut": "Mark Out",
+		"trimHeadToPlayhead": "Cut Clip Start to Playhead",
+		"trimTailToPlayhead": "Cut Clip End from Playhead",
+		"splitClipAlt": "Split Clip (alt)",
+		"stepFrame": "Previous / Next Frame",
+		"stepSecond": "Back / Forward 1 Second",
+		"jumpToCut": "Previous / Next Cut",
+		"clearMarks": "Clear In / Out Marks"
 	}
 }

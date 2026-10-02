@@ -5,6 +5,7 @@ import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCo
 import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
 import type { useCaptionCommands } from "../hooks/useCaptionCommands";
 import type { useClipRegionCommands } from "../hooks/useClipRegionCommands";
+import type { useEditingShortcuts } from "../hooks/useEditingShortcuts";
 import type { EditorPlayback } from "../hooks/useIntroOutroPreview";
 import type { useTimelineProjection } from "../hooks/useTimelineProjection";
 import type { useZoomRegionCommands } from "../hooks/useZoomRegionCommands";
@@ -22,6 +23,7 @@ type Props = {
 	audio: ReturnType<typeof useVideoEditorAudio>;
 	zoomCommands: ReturnType<typeof useZoomRegionCommands>;
 	clipCommands: ReturnType<typeof useClipRegionCommands>;
+	editTools: ReturnType<typeof useEditingShortcuts>;
 	audioCommands: ReturnType<typeof useAudioRegionCommands>;
 	captionCommands: ReturnType<typeof useCaptionCommands>;
 	annotationCommands: ReturnType<typeof useAnnotationRegionCommands>;
@@ -46,6 +48,7 @@ export function EditorTimelinePanel(props: Props) {
 		audio,
 		zoomCommands,
 		clipCommands,
+		editTools,
 		audioCommands,
 		captionCommands,
 		annotationCommands,
@@ -99,6 +102,8 @@ export function EditorTimelinePanel(props: Props) {
 						trimRegions={timeline.trimRegions}
 						clipRegions={timeline.clipRegions}
 						onClipSplit={clipCommands.handleClipSplit}
+						marks={editTools.marks}
+						onDeleteWithoutSelection={editTools.deleteMarkedRange}
 						onClipDelete={clipCommands.handleClipDelete}
 						onClipSpanChange={clipCommands.handleClipSpanChange}
 						selectedClipId={timeline.selectedClipId}

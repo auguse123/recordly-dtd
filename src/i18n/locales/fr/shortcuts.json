@@ -5,12 +5,25 @@
 		"addSpeed": "Ajouter une vitesse",
 		"addAnnotation": "Ajouter une annotation",
 		"addKeyframe": "Ajouter une image clé",
-		"deleteSelected": "Supprimer la sélection",
+		"deleteSelected": "Supprimer la sélection / la plage I-O",
 		"playPause": "Lecture / Pause",
 		"cycleForward": "Parcourir les annotations vers l’avant",
 		"cycleBackward": "Parcourir les annotations vers l’arrière",
 		"deleteSelectedAlt": "Supprimer la sélection (alt)",
 		"panTimeline": "Déplacer la timeline",
-		"zoomTimeline": "Zoomer la timeline"
+		"zoomTimeline": "Zoomer la timeline",
+		"splitClip": "Couper le clip",
+		"playReverse": "Lecture arrière (répéter = plus vite)",
+		"stopPlayback": "Stop",
+		"playForward": "Lecture avant",
+		"markIn": "Point d’entrée",
+		"markOut": "Point de sortie",
+		"trimHeadToPlayhead": "Couper le début du clip jusqu’à la tête de lecture",
+		"trimTailToPlayhead": "Couper la fin du clip après la tête de lecture",
+		"splitClipAlt": "Couper le clip (alt)",
+		"stepFrame": "Image précédente / suivante",
+		"stepSecond": "Reculer / avancer d’1 seconde",
+		"jumpToCut": "Coupe précédente / suivante",
+		"clearMarks": "Effacer les points I / O"
 	}
 }

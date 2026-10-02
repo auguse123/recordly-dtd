@@ -1,12 +1,13 @@
-import { Plus } from "@/components/ui/icons";
 import type { Span } from "dnd-timeline";
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { Plus } from "@/components/ui/icons";
 import type {
 	SourceAudioTrackMeta,
 	SourceAudioTrackSettings,
 } from "@/components/video-editor/audio/audioTypes";
 import { useScopedT } from "@/contexts/I18nContext";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
+import type { TimelineMarks } from "../editTools";
 import { fromFileUrl } from "../projectPersistence";
 import type {
 	AnnotationRegion,
@@ -52,6 +53,10 @@ export interface TimelineEditorProps {
 	onTrimSpanChange?: (id: string, span: Span) => void;
 	clipRegions?: ClipRegion[];
 	onClipSplit?: (splitMs: number) => void;
+	/** In/out marks drawn over the timeline. */
+	marks?: TimelineMarks;
+	/** Delete pressed with nothing selected; returns true when it acted. */
+	onDeleteWithoutSelection?: () => boolean;
 	onClipSpanChange?: (id: string, span: ClipSequenceSpan) => void;
 	onClipDelete?: (id: string) => void;
 	selectedClipId?: string | null;
@@ -135,6 +140,8 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			onTrimSpanChange,
 			clipRegions = [],
 			onClipSplit,
+			marks,
+			onDeleteWithoutSelection,
 			onClipSpanChange,
 			onClipDelete,
 			selectedClipId,
@@ -193,6 +200,10 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 
 		const timelineContainerRef = useRef<HTMLDivElement>(null);
 		const isTimelineFocusedRef = useRef(false);
+		const snapTimesRef = useRef<number[]>([]);
+		snapTimesRef.current = [currentTimeMs, marks?.inMs, marks?.outMs].filter(
+			(time): time is number => typeof time === "number",
+		);
 		const { setRange, clampedRange, handleTimelineWheel } = useTimelineRange({
 			totalMs,
 			timelineContainerRef,
@@ -401,6 +412,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			isMac,
 			keyShortcuts,
 			isTimelineFocusedRef,
+			onDeleteWithoutSelection,
 		});
 
 		if (!videoDuration || videoDuration === 0) {
@@ -453,6 +465,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 						onItemSpanChange={handleItemSpanChange}
 						resolveTargetRowId={getResolvedDropRowId}
 						allRegionSpans={allRegionSpans}
+						snapTimesRef={snapTimesRef}
 						onDraggingChange={setIsDragging}
 						onLiveSpanPreviewChange={(id, span) => {
 							setLiveSpanPreviewById((prev) => {
@@ -487,6 +500,7 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 							items={timelineItems}
 							videoDurationMs={totalMs}
 							currentTimeMs={currentTimeMs}
+							marks={marks}
 							onSeek={onSeek}
 							onAddZoomAtMs={addZoomAtMs}
 							canPlaceZoomAtMs={canPlaceZoomAtMs}

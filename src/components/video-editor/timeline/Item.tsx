@@ -1,26 +1,30 @@
+import { useDndMonitor } from "@dnd-kit/core";
+import type { GetSpanFromDragEvent, GetSpanFromResizeEvent, Span } from "dnd-timeline";
+import { useItem, useTimelineContext } from "dnd-timeline";
+import { useCallback, useMemo, useRef } from "react";
 import {
 	Gauge,
-	MagnifyingGlassPlus as ZoomIn,
 	ChatCircle as MessageSquare,
 	MusicNotes as Music,
 	Scissors,
 	SpeakerX,
+	MagnifyingGlassPlus as ZoomIn,
 } from "@/components/ui/icons";
-import { ClipFilmstrip } from "./components/filmstrip/ClipFilmstrip";
-import type { Span, GetSpanFromDragEvent, GetSpanFromResizeEvent } from "dnd-timeline";
-import { useItem, useTimelineContext } from "dnd-timeline";
-import { useCallback, useMemo, useRef } from "react";
-import { useDndMonitor } from "@dnd-kit/core";
-import { useTimelinePresentation } from "./core/TimelinePresentation";
-import { getRegionDisplaySpan, snapRegionSpan } from "./core/clipPresentation";
-import { resolveDragEnd, resolveResizeEnd } from "./dnd/engine";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatClipSpeedLabel } from "../clipSpeedChange";
-import { getTimeAtClipSeam, type ClipPresentation } from "./core/clipPresentation";
-import { formatPlayheadTime } from "./core/time";
+import { ClipFilmstrip } from "./components/filmstrip/ClipFilmstrip";
 import AudioWaveform from "./components/waveform/AudioWaveform";
+import {
+	type ClipPresentation,
+	getRegionDisplaySpan,
+	getTimeAtClipSeam,
+	snapRegionSpan,
+} from "./core/clipPresentation";
+import { useTimelinePresentation } from "./core/TimelinePresentation";
+import { formatPlayheadTime } from "./core/time";
 import type { AudioPeaksData } from "./core/timelineTypes";
+import { resolveDragEnd, resolveResizeEnd } from "./dnd/engine";
 import glassStyles from "./ItemGlass.module.css";
 
 interface ItemProps {
@@ -111,7 +115,13 @@ export default function Item({
 		[presentation.regions, id],
 	);
 	const snap = (next: Span, edge?: "start" | "end") =>
-		snapRegionSpan(next, targets, presentation.clips, timeline.pixelsToValue(1), edge);
+		snapRegionSpan(
+			next,
+			[...targets, ...(presentation.snapTimesRef?.current ?? [])],
+			presentation.clips,
+			timeline.pixelsToValue(1),
+			edge,
+		);
 	const getMediaSpanFromDrag: GetSpanFromDragEvent = (event) => {
 		if (!("delta" in event)) return span;
 		const dragged = timeline.getSpanFromDragEvent(event);

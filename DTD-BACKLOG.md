@@ -12,7 +12,7 @@ Demandes d'Augustin (2026-10-01), à faire petit à petit.
 | 7 | Kit de partage : dossier MP4 + GIF + vignette avec bouton lecture (option B) | fait (bouton après export MP4) |
 | 10 | Son et vidéo en pistes séparées (traitement audio externe) | fait : bouton « Pistes séparées » après export MP4 (vidéo sans son + son complet WAV + voix brute WAV alignée sur l'intro) ; section « Voix » (exporter la voix brute complète en WAV, réimporter la voix traitée, revenir à la précédente) |
 | 11 | Curseur normal (pas seulement un curseur de remplacement) | fait : interrupteur « Curseur système » (onglet Curseur) : curseurs macOS, trajet brut, sans lissage/flou/rebond/effet de clic |
-| 12 | Outils de coupe façon DaVinci (lame, suppression qui referme le trou, J/K/L, I/O, magnétisme) | à faire |
+| 12 | Outils de coupe façon DaVinci (lame, suppression qui referme le trou, J/K/L, I/O, magnétisme) | fait : J/K/L (lecture arrière/stop/avant), I/O + Suppr (supprime la plage et referme le trou), Q/W (coupe début/fin du clip à la tête de lecture), ↑/↓ (coupe précédente/suivante), ←/→ (image, ⇧ = seconde), ⌘B (couper), ⌥X (effacer I/O), tête de lecture et blocs aimantés aux coupes et marques |
 | 13 | Transitions entre clips (fondu enchaîné, fondu au noir) + fondus audio | à faire |
 | 14 | Étalonnage simple (luminosité, contraste, saturation, température, préréglages) | à faire |
 | 15 | Musique + ducking (la musique baisse quand on parle) | à faire |

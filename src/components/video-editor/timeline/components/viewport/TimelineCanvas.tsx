@@ -1,5 +1,3 @@
-import { useTimelinePresentation } from "../../core/TimelinePresentation";
-import { Plus } from "@/components/ui/icons";
 import { useTimelineContext } from "dnd-timeline";
 import {
 	type MouseEvent,
@@ -11,11 +9,20 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { Plus } from "@/components/ui/icons";
 import type {
 	SourceAudioTrackSettings,
 	SourceAudioTrackWithPeaks,
 } from "@/components/video-editor/audio/audioTypes";
 import { cn } from "@/lib/utils";
+import type { TimelineMarks } from "../../../editTools";
+import {
+	type ClipPresentation,
+	getEmbeddedCaptionSpan,
+	getPlayheadDisplayTime,
+	getRegionDisplaySpan,
+	getTimeAtClipSeam,
+} from "../../core/clipPresentation";
 import {
 	CAPTION_ROW_ID,
 	CLIP_ROW_ID,
@@ -30,6 +37,7 @@ import {
 	isAnnotationTrackRowId,
 	isAudioTrackRowId,
 } from "../../core/rows";
+import { useTimelinePresentation } from "../../core/TimelinePresentation";
 import type { TimelineRenderItem } from "../../core/timelineTypes";
 import { DEFAULT_CAPTION_DURATION_MS } from "../../hooks/actions/useTimelineCaptionActions";
 import { useTimelineAudioPeaks } from "../../hooks/useTimelineAudioPeaks";
@@ -37,18 +45,12 @@ import Item from "../../Item";
 import glassStyles from "../../ItemGlass.module.css";
 import Row from "../../Row";
 import {
-	type ClipPresentation,
-	getEmbeddedCaptionSpan,
-	getTimeAtClipSeam,
-	getRegionDisplaySpan,
-	getPlayheadDisplayTime,
-} from "../../core/clipPresentation";
-import {
 	getTimelineContentMinHeightPx,
 	getTimelineRowsMinHeightPx,
 	TIMELINE_AXIS_HEIGHT_PX,
 } from "../../timelineLayout";
 import PlaybackCursor from "../playhead/PlaybackCursor";
+import TimelineMarksOverlay from "../playhead/TimelineMarksOverlay";
 
 const HINT_CLIP = "Press C to split clip";
 const HINT_ANNOTATION = "Press A to add annotation";
@@ -59,6 +61,7 @@ interface TimelineCanvasProps {
 	items: TimelineRenderItem[];
 	videoDurationMs: number;
 	currentTimeMs: number;
+	marks?: TimelineMarks;
 	onSeek?: (time: number) => void;
 	canPlaceZoomAtMs?: (startMs: number) => boolean;
 	onSelectZoom?: (id: string | null) => void;
@@ -900,6 +903,7 @@ export default function TimelineCanvas({
 	items,
 	videoDurationMs,
 	currentTimeMs,
+	marks,
 	onSeek,
 	onAddZoomAtMs,
 	canPlaceZoomAtMs,
@@ -1153,6 +1157,11 @@ export default function TimelineCanvas({
 			onMouseLeave={handleTimelineMouseLeave}
 		>
 			<div aria-hidden="true" style={{ height: TIMELINE_AXIS_HEIGHT_PX, flexShrink: 0 }} />
+			<TimelineMarksOverlay
+				marks={marks}
+				clips={clipPresentation}
+				videoDurationMs={videoDurationMs}
+			/>
 			<PlaybackCursor
 				clips={clipPresentation}
 				currentTimeMs={currentTimeMs}
@@ -1160,6 +1169,7 @@ export default function TimelineCanvas({
 				onSeek={onSeek}
 				timelineRef={localTimelineRef}
 				keyframes={keyframes}
+				marks={marks}
 				isLoading={isLoading}
 			/>
 			{canShowGhostPlayhead && (

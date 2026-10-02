@@ -1,16 +1,17 @@
-import type { ClipSequenceSpan } from "../timeline/core/timelineTypes";
 import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from "react";
 import { toast } from "@/components/ui/toast";
-import { changeClipSpan } from "../clipSpanChange";
 import {
 	packClipSequence,
 	reorderClipSequence,
 	rippleRegionAnchors,
 	rippleRegions,
 } from "../clipSequence";
-import { getClipSourceStartMs, type AnnotationRegion, type AudioRegion } from "../types";
+import { changeClipSpan } from "../clipSpanChange";
 import { planClipSplit } from "../clipSplit";
+import { planRangeRemoval, planTrimToPlayhead, type RangeRemovalPlan } from "../editTools";
+import type { ClipSequenceSpan } from "../timeline/core/timelineTypes";
 import type { ClipRegion, EditorEffectSection, ZoomRegion } from "../types";
+import { type AnnotationRegion, type AudioRegion, getClipSourceStartMs } from "../types";
 import { supportsPreviewPlaybackRate } from "../videoPlayback/playbackRate";
 
 type Translator = (
@@ -55,13 +56,14 @@ export function useClipRegionCommands({
 	nextClipIdRef,
 	t,
 }: UseClipRegionCommandsParams) {
+	/** `before` must sit on the same timeline as the current clips (e.g. after a split). */
 	const applySequence = useCallback(
-		(edited: ClipRegion[]) => {
+		(edited: ClipRegion[], before: ClipRegion[] = clipRegions) => {
 			const next = packClipSequence(edited);
 			setClipRegions(next);
-			setZoomRegions((current) => rippleRegions(current, clipRegions, next));
-			setAnnotationRegions((current) => rippleRegions(current, clipRegions, next));
-			setAudioRegions((current) => rippleRegionAnchors(current, clipRegions, next));
+			setZoomRegions((current) => rippleRegions(current, before, next));
+			setAnnotationRegions((current) => rippleRegions(current, before, next));
+			setAudioRegions((current) => rippleRegionAnchors(current, before, next));
 		},
 		[clipRegions, setClipRegions, setZoomRegions, setAnnotationRegions, setAudioRegions],
 	);
@@ -194,8 +196,50 @@ export function useClipRegionCommands({
 		[clipRegions, selectedClipId, applySequence, setSelectedClipId],
 	);
 
+	const applyRemoval = useCallback(
+		(plan: RangeRemovalPlan | null) => {
+			if (!plan) return false;
+			applySequence(plan.after, plan.before);
+			if (selectedClipId && !plan.after.some((clip) => clip.id === selectedClipId)) {
+				setSelectedClipId(null);
+			}
+			return true;
+		},
+		[applySequence, selectedClipId, setSelectedClipId],
+	);
+
+	/** Ripple-delete a span of the edit (in/out marks). */
+	const handleRemoveRange = useCallback(
+		(startMs: number, endMs: number) =>
+			applyRemoval(
+				planRangeRemoval({
+					clipRegions,
+					startMs,
+					endMs,
+					createId: () => `clip-${nextClipIdRef.current++}`,
+				}),
+			),
+		[applyRemoval, clipRegions, nextClipIdRef],
+	);
+
+	/** Ripple-delete the clip under the playhead up to ("head") or from ("tail") it. */
+	const handleTrimToPlayhead = useCallback(
+		(playheadMs: number, side: "head" | "tail") =>
+			applyRemoval(
+				planTrimToPlayhead({
+					clipRegions,
+					playheadMs,
+					side,
+					createId: () => `clip-${nextClipIdRef.current++}`,
+				}),
+			),
+		[applyRemoval, clipRegions, nextClipIdRef],
+	);
+
 	return {
 		handleSelectClip,
+		handleRemoveRange,
+		handleTrimToPlayhead,
 		handleClipSplit,
 		handleClipSpanChange,
 		handleClipSpeedChange,

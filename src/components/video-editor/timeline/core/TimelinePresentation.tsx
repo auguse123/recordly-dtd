@@ -1,8 +1,8 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useTimelineContext } from "dnd-timeline";
-import { CLIP_ROW_ID } from "./constants";
-import { getClipDisplaySpan, type ClipPresentation } from "./clipPresentation";
+import { createContext, type ReactNode, type RefObject, useContext, useMemo } from "react";
 import type { DndEngineConfig } from "../dnd/engine";
+import { type ClipPresentation, getClipDisplaySpan } from "./clipPresentation";
+import { CLIP_ROW_ID } from "./constants";
 import type { TimelineRegionSpan } from "./timelineTypes";
 
 type PreviewConfig = Pick<
@@ -12,6 +12,8 @@ type PreviewConfig = Pick<
 const Context = createContext<{
 	clips: ClipPresentation[];
 	regions: TimelineRegionSpan[];
+	/** Playhead and in/out marks; a ref so blocks don't re-render every frame. */
+	snapTimesRef?: RefObject<number[]>;
 	previewConfig: PreviewConfig;
 }>({
 	clips: [],
@@ -30,7 +32,12 @@ export function TimelinePresentation({
 	totalMs,
 	minItemDurationMs,
 	hasOverlap,
-}: { regions: TimelineRegionSpan[]; children: ReactNode } & Omit<PreviewConfig, "allRegionSpans">) {
+	snapTimesRef,
+}: {
+	regions: TimelineRegionSpan[];
+	children: ReactNode;
+	snapTimesRef?: RefObject<number[]>;
+} & Omit<PreviewConfig, "allRegionSpans">) {
 	const { pixelsToValue } = useTimelineContext();
 	const value = useMemo(() => {
 		const spans = regions
@@ -38,12 +45,13 @@ export function TimelinePresentation({
 			.map(({ start, end }) => ({ start, end }));
 		return {
 			regions,
+			snapTimesRef,
 			previewConfig: { totalMs, minItemDurationMs, hasOverlap, allRegionSpans: regions },
 			clips: spans.map((span) => ({
 				span,
 				displaySpan: getClipDisplaySpan(span, spans, pixelsToValue(1)),
 			})),
 		};
-	}, [regions, pixelsToValue, totalMs, minItemDurationMs, hasOverlap]);
+	}, [regions, snapTimesRef, pixelsToValue, totalMs, minItemDurationMs, hasOverlap]);
 	return <Context.Provider value={value}>{children}</Context.Provider>;
 }

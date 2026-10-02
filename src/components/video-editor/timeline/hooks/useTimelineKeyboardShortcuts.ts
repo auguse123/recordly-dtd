@@ -28,6 +28,8 @@ interface UseTimelineKeyboardShortcutsParams {
 	deleteSelectedAudio: () => void;
 	deleteSelectedCaption: () => void;
 	cycleAnnotationsAtCurrentTime: (backward?: boolean) => boolean;
+	/** Delete with nothing selected (e.g. remove the in/out range); true when handled. */
+	onDeleteWithoutSelection?: () => boolean;
 }
 
 export function useTimelineKeyboardShortcuts({
@@ -55,6 +57,7 @@ export function useTimelineKeyboardShortcuts({
 	deleteSelectedAudio,
 	deleteSelectedCaption,
 	cycleAnnotationsAtCurrentTime,
+	onDeleteWithoutSelection,
 }: UseTimelineKeyboardShortcutsParams) {
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -91,9 +94,11 @@ export function useTimelineKeyboardShortcuts({
 					selectedAudioId,
 					selectedCaptionId,
 				});
-				if (target !== "none") {
-					e.preventDefault();
+				if (target === "none") {
+					if (onDeleteWithoutSelection?.()) e.preventDefault();
+					return;
 				}
+				e.preventDefault();
 				if (target === "keyframe") {
 					deleteSelectedKeyframe();
 				} else if (target === "zoom") {
@@ -157,6 +162,7 @@ export function useTimelineKeyboardShortcuts({
 		isMac,
 		isTimelineFocusedRef,
 		keyShortcuts,
+		onDeleteWithoutSelection,
 		selectAllBlocksActive,
 		selectedAnnotationId,
 		selectedAudioId,

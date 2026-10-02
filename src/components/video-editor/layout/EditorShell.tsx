@@ -130,6 +130,7 @@ export function EditorShell(props: Props) {
 		clipCommands,
 		audioCommands,
 		annotationCommands,
+		editTools,
 		handleSelectAnnotation,
 		handleAutoSuggestZoomsConsumed,
 	} = editing;
@@ -388,6 +389,7 @@ export function EditorShell(props: Props) {
 					audio={audio}
 					zoomCommands={zoomCommands}
 					clipCommands={clipCommands}
+					editTools={editTools}
 					audioCommands={audioCommands}
 					captionCommands={captionCommands}
 					annotationCommands={annotationCommands}

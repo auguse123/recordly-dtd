@@ -70,6 +70,7 @@ interface UseTimelineEditorRuntimeParams {
 	isMac: boolean;
 	keyShortcuts: TimelineShortcutBindings;
 	isTimelineFocusedRef: RefObject<boolean | null>;
+	onDeleteWithoutSelection?: () => boolean;
 }
 
 export function useTimelineEditorRuntime({
@@ -120,6 +121,7 @@ export function useTimelineEditorRuntime({
 	isMac,
 	keyShortcuts,
 	isTimelineFocusedRef,
+	onDeleteWithoutSelection,
 }: UseTimelineEditorRuntimeParams) {
 	const {
 		keyframes,
@@ -285,6 +287,7 @@ export function useTimelineEditorRuntime({
 		deleteSelectedAudio,
 		deleteSelectedCaption,
 		cycleAnnotationsAtCurrentTime,
+		onDeleteWithoutSelection,
 	});
 
 	useImperativeHandle(

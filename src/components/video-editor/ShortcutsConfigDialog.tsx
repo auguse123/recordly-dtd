@@ -1,7 +1,5 @@
-import { Kbd, Description, Modal } from "@heroui/react";
-import { Keyboard, ArrowCounterClockwise as RotateCcw } from "@/components/ui/icons";
+import { Description, Kbd, Modal } from "@heroui/react";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -10,6 +8,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { Keyboard, ArrowCounterClockwise as RotateCcw } from "@/components/ui/icons";
+import { toast } from "@/components/ui/toast";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
 import {
 	DEFAULT_SHORTCUTS,
@@ -29,6 +29,9 @@ const MODIFIER_KEYS = new Set(["Control", "Shift", "Alt", "Meta"]);
 
 export function ShortcutsConfigDialog() {
 	const t = useScopedT("dialogs");
+	const tShortcuts = useScopedT("shortcuts");
+	const actionLabel = (action: ShortcutAction) =>
+		tShortcuts(`actions.${action}`, SHORTCUT_LABELS[action]);
 	const { shortcuts, isMac, isConfigOpen, closeConfig, setShortcuts, persistShortcuts } =
 		useShortcuts();
 
@@ -147,7 +150,7 @@ export function ShortcutsConfigDialog() {
 								<div key={action}>
 									<div className="flex items-center justify-between gap-4 border-b border-separator py-3">
 										<span className="text-[13px] text-foreground">
-											{SHORTCUT_LABELS[action]}
+											{actionLabel(action)}
 										</span>
 										<Button
 											type="button"
@@ -155,8 +158,8 @@ export function ShortcutsConfigDialog() {
 											size="sm"
 											aria-label={
 												isCapturing
-													? `${SHORTCUT_LABELS[action]}: ${t("shortcutsConfig.pressAKey")}`
-													: `Change ${SHORTCUT_LABELS[action]} shortcut, currently ${formatBinding(draft[action], isMac)}`
+													? `${actionLabel(action)}: ${t("shortcutsConfig.pressAKey")}`
+													: `Change ${actionLabel(action)} shortcut, currently ${formatBinding(draft[action], isMac)}`
 											}
 											onClick={() => {
 												setConflict(null);
@@ -186,9 +189,9 @@ export function ShortcutsConfigDialog() {
 											<div className="flex items-center justify-between px-1 py-1.5 mb-0.5 bg-warning-soft border border-warning/20 rounded text-xs">
 												<span className="text-warning">
 													{t("shortcutsConfig.alreadyUsedBy", undefined, {
-														action: SHORTCUT_LABELS[
-															conflict.conflictWith.action
-														],
+														action: actionLabel(
+															conflict.conflictWith.action,
+														),
 													})}
 												</span>
 												<div className="flex gap-1.5">
@@ -220,12 +223,14 @@ export function ShortcutsConfigDialog() {
 						<p className="mb-3 text-[13px] font-medium text-foreground">
 							{t("shortcutsConfig.fixed")}
 						</p>
-						{FIXED_SHORTCUTS.map(({ label, display }) => (
+						{FIXED_SHORTCUTS.map(({ label, labelKey, display }) => (
 							<div
 								key={label}
 								className="flex items-center justify-between gap-4 border-b border-separator py-3 last:border-0"
 							>
-								<span className="text-[13px] text-foreground">{label}</span>
+								<span className="text-[13px] text-foreground">
+									{labelKey ? tShortcuts(`actions.${labelKey}`, label) : label}
+								</span>
 								<Kbd className="min-w-[90px] justify-center">{display}</Kbd>
 							</div>
 						))}

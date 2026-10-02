@@ -1,13 +1,13 @@
 import { useTimelineContext } from "dnd-timeline";
-import { useEffect, useState, type RefObject } from "react";
+import { type RefObject, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatPlayheadTime } from "../../core/time";
-
+import type { TimelineMarks } from "../../../editTools";
 import {
+	type ClipPresentation,
 	getPlayheadDisplayTime,
 	getTimeAtClipSeam,
-	type ClipPresentation,
 } from "../../core/clipPresentation";
+import { formatPlayheadTime } from "../../core/time";
 
 interface PlaybackCursorProps {
 	clips: ClipPresentation[];
@@ -16,8 +16,13 @@ interface PlaybackCursorProps {
 	onSeek?: (time: number) => void;
 	timelineRef: RefObject<HTMLDivElement | null>;
 	keyframes?: { id: string; time: number }[];
+	/** In/out marks: the drag snaps to them like to cuts. */
+	marks?: TimelineMarks;
 	isLoading?: boolean;
 }
+
+/** Screen-space magnet for cuts and marks while scrubbing. */
+const EDIT_SNAP_PX = 8;
 
 export default function PlaybackCursor({
 	clips,
@@ -26,6 +31,7 @@ export default function PlaybackCursor({
 	onSeek,
 	timelineRef,
 	keyframes = [],
+	marks,
 	isLoading = false,
 }: PlaybackCursorProps) {
 	const { sidebarWidth, direction, range, valueToPixels, pixelsToValue } = useTimelineContext();
@@ -56,7 +62,27 @@ export default function PlaybackCursor({
 					kf.time >= range.start &&
 					kf.time <= range.end,
 			);
-			if (nearbyKeyframe) absoluteMs = nearbyKeyframe.time;
+			if (nearbyKeyframe) {
+				absoluteMs = nearbyKeyframe.time;
+			} else {
+				const editSnapMs = pixelsToValue(EDIT_SNAP_PX);
+				const targets = [
+					...clips.flatMap(({ span }) => [span.start, span.end]),
+					marks?.inMs,
+					marks?.outMs,
+				].filter((time): time is number => typeof time === "number");
+				let best: number | null = null;
+				for (const target of targets) {
+					const distance = Math.abs(target - absoluteMs);
+					if (
+						distance <= editSnapMs &&
+						(best === null || distance < Math.abs(best - absoluteMs))
+					) {
+						best = target;
+					}
+				}
+				if (best !== null) absoluteMs = best;
+			}
 
 			onSeek(absoluteMs / 1000);
 		};
@@ -86,6 +112,7 @@ export default function PlaybackCursor({
 		videoDurationMs,
 		pixelsToValue,
 		keyframes,
+		marks,
 		direction,
 	]);
 

@@ -1,4 +1,3 @@
-import { TimelinePresentation } from "../../core/TimelinePresentation";
 import { KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type {
 	DragEndEvent,
@@ -10,8 +9,9 @@ import type {
 	Span,
 } from "dnd-timeline";
 import { TimelineContext } from "dnd-timeline";
-import type { Dispatch, ReactNode, SetStateAction } from "react";
+import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
 import { useCallback, useRef } from "react";
+import { TimelinePresentation } from "../../core/TimelinePresentation";
 import type { ClipSequenceSpan, TimelineRegionSpan } from "../../core/timelineTypes";
 import { clampRange, resolveDragEnd, resolveResizeEnd } from "../../dnd/engine";
 
@@ -27,6 +27,8 @@ interface TimelineWrapperProps {
 	onItemSpanChange: (id: string, span: ClipSequenceSpan, rowId?: string) => void;
 	resolveTargetRowId?: (id: string, proposedRowId: string) => string;
 	allRegionSpans?: TimelineRegionSpan[];
+	/** Extra magnet times for dragged blocks (playhead, in/out marks). */
+	snapTimesRef?: RefObject<number[]>;
 	onLiveSpanPreviewChange?: (id: string, span: Span | null) => void;
 	onDraggingChange?: (dragging: boolean) => void;
 }
@@ -43,6 +45,7 @@ export default function TimelineWrapper({
 	onItemSpanChange,
 	resolveTargetRowId,
 	allRegionSpans = [],
+	snapTimesRef,
 	onLiveSpanPreviewChange,
 	onDraggingChange,
 }: TimelineWrapperProps) {
@@ -282,6 +285,7 @@ export default function TimelineWrapper({
 					totalMs={totalMs}
 					minItemDurationMs={minItemDurationMs}
 					hasOverlap={hasOverlap}
+					snapTimesRef={snapTimesRef}
 				>
 					{children}
 				</TimelinePresentation>

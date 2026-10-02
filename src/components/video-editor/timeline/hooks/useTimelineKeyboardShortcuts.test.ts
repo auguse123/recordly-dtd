@@ -122,6 +122,20 @@ describe.each(selections)("delete %s", (selection, action) => {
 it("does not consume deletion without a selection", () => {
 	expect(setup().press().preventDefault).not.toHaveBeenCalled();
 });
+it("hands deletion without a selection to the in/out range fallback", () => {
+	const onDeleteWithoutSelection = vi.fn(() => true);
+	const { press, params } = setup({ onDeleteWithoutSelection });
+	expect(press().preventDefault).toHaveBeenCalledOnce();
+	expect(onDeleteWithoutSelection).toHaveBeenCalledOnce();
+	expect(params.deleteSelectedClip).not.toHaveBeenCalled();
+	expect(
+		setup({ onDeleteWithoutSelection: () => false }).press().preventDefault,
+	).not.toHaveBeenCalled();
+	const withClip = setup({ onDeleteWithoutSelection, selectedClipId: "clip" });
+	withClip.press();
+	expect(withClip.params.deleteSelectedClip).toHaveBeenCalledOnce();
+	expect(onDeleteWithoutSelection).toHaveBeenCalledOnce();
+});
 it("select-all zooms takes priority over an individual clip selection", () => {
 	const { press, params } = setup({ selectAllBlocksActive: true, selectedClipId: "clip" });
 	press();
