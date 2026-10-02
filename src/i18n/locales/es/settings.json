@@ -150,6 +150,8 @@
 		"webcamCrop": "Recorte de cámara",
 		"webcamReactToZoom": "La cámara reacciona al zoom",
 		"webcamMirror": "Reflejar cámara",
+		"webcamSyncOffset": "Desfase de cámara",
+		"webcamSyncOffsetHint": "+ retrasa la cámara, − la adelanta. Úsalo si labios y voz no coinciden.",
 		"webcamRoundness": "Redondez de cámara",
 		"webcamShadow": "Sombra de cámara",
 		"shadow": "Sombra",
@@ -354,6 +356,9 @@
 		"title": "Audio clip",
 		"volume": "Volume",
 		"mute": "Mute audio clip",
-		"delete": "Delete audio clip"
+		"delete": "Delete audio clip",
+		"syncOffset": "Desfase de audio",
+		"syncOffsetHint": "+ retrasa el sonido, − lo adelanta, sin mover el clip.",
+		"syncAllClips": "Desfasar todos los clips de audio"
 	}
 }

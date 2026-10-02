@@ -5,7 +5,12 @@ import { getGainAt, getTransitionGainEnvelope, resolveClipTransitions } from "..
 import type { AudioRegion, ClipRegion } from "../types";
 import { findClipAtTimelineTime } from "../types";
 import { isClipMutedById } from "./clipAudio";
-import { findAudioClipAt, getAudioClipSourceTimeMs, getAudioClipVolume } from "./detachedAudio";
+import {
+	findAudioClipAt,
+	getAudioClipSourceTimeMs,
+	getAudioClipVolume,
+	resolveAudioClipSync,
+} from "./detachedAudio";
 import { useAudioPreviewSync } from "./useAudioPreviewSync";
 import { useClipAudioSettingsController } from "./useClipAudioSettingsController";
 import { useMusicDuckingEnvelopes } from "./useMusicDuckingEnvelopes";
@@ -95,9 +100,15 @@ export function useVideoEditorAudio({
 		isAudioDetached && !sourceTrackRoutingPolicy.muteEmbeddedPreview
 			? fallbackLookupSourcePath
 			: null;
+	// Sync offsets baked in: what the clips actually play.
+	const playbackAudioClips = useMemo(
+		() => (audioClipRegions ? resolveAudioClipSync(audioClipRegions) : null),
+		[audioClipRegions],
+	);
 	const activeAudioClip = useMemo(
-		() => (audioClipRegions ? findAudioClipAt(timelineTime * 1000, audioClipRegions) : null),
-		[audioClipRegions, timelineTime],
+		() =>
+			playbackAudioClips ? findAudioClipAt(timelineTime * 1000, playbackAudioClips) : null,
+		[playbackAudioClips, timelineTime],
 	);
 
 	const activeClipIdAtCurrentTime = useMemo(
@@ -168,7 +179,7 @@ export function useVideoEditorAudio({
 
 	const userTrackGainEnvelopes = useMusicDuckingEnvelopes({
 		audioRegions,
-		clipRegions: audioClipRegions ?? clipRegions,
+		clipRegions: playbackAudioClips ?? clipRegions,
 		voicePath: micSidecarPath ?? fallbackLookupSourcePath,
 		voiceStartDelayMs: micSidecarPath
 			? (sourceAudioFallbackStartDelayMsByPath[micSidecarPath] ?? 0)

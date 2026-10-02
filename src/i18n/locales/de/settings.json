@@ -150,6 +150,8 @@
 		"webcamCrop": "Webcam zuschneiden",
 		"webcamReactToZoom": "Webcam reagiert auf Zoom",
 		"webcamMirror": "Webcam spiegeln",
+		"webcamSyncOffset": "Kamera-Versatz",
+		"webcamSyncOffsetHint": "+ zeigt die Kamera später, − früher. Nutzen, wenn Lippen und Stimme auseinanderlaufen.",
 		"webcamRoundness": "Webcam-Rundung",
 		"webcamShadow": "Webcam-Schatten",
 		"shadow": "Schatten",
@@ -354,6 +356,9 @@
 		"title": "Audio clip",
 		"volume": "Volume",
 		"mute": "Mute audio clip",
-		"delete": "Delete audio clip"
+		"delete": "Delete audio clip",
+		"syncOffset": "Audio-Versatz",
+		"syncOffsetHint": "+ spielt den Ton später, − früher, ohne den Clip zu verschieben.",
+		"syncAllClips": "Alle Audioclips versetzen"
 	}
 }

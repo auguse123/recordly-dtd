@@ -251,6 +251,11 @@ export interface ClipRegion {
 	showSourceAudio?: boolean;
 	/** Volume of a detached audio clip (0–2, 1 when unset). */
 	volume?: number;
+	/**
+	 * Manual A/V sync of a detached audio clip: its sound plays this much later
+	 * (negative: earlier) without moving or resizing the clip.
+	 */
+	syncOffsetMs?: number;
 	/** Transition into the next clip (or out to black on the last clip). */
 	transitionOut?: ClipTransition;
 }

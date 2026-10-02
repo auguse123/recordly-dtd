@@ -35,10 +35,19 @@ describe("ScreenCaptureKitRecorder finalization coordination", () => {
 });
 
 describe("ScreenCaptureKitRecorder resume timing", () => {
-	it("anchors warm-start resume timing to video before accepting audio", () => {
+	it("ends a pause at the resume command, not at the next screen frame", () => {
+		// ScreenCaptureKit sends no complete frame while the screen is still, so
+		// anchoring the resume on one dropped the voice spoken over a still screen.
 		expect(recorderSource).toContain(
-			"guard outputType == .screen, let pauseStartedHostTime else",
+			"let resumedAt = CMClockGetTime(CMClockGetHostTimeClock())",
 		);
+		expect(recorderSource).toContain(
+			"self.accumulatedPausedDuration = self.accumulatedPausedDuration + (resumedAt - pauseStartedHostTime)",
+		);
+		expect(recorderSource).toContain(
+			"if let resumedAtHostTime, sampleTime < resumedAtHostTime {",
+		);
+		expect(recorderSource).not.toContain("pendingResumeAdjustment");
 	});
 
 	it("drops non-monotonic video samples", () => {
@@ -101,9 +110,11 @@ describe("ScreenCaptureKitRecorder window capture", () => {
 	});
 });
 
-
 describe("ScreenCaptureKitRecorder first frame timing", () => {
-	const callback = recorderSource.slice(recorderSource.indexOf("func stream(_ stream:"), recorderSource.indexOf("func stream(_ stream:") + 5000);
+	const callback = recorderSource.slice(
+		recorderSource.indexOf("func stream(_ stream:"),
+		recorderSource.indexOf("func stream(_ stream:") + 5000,
+	);
 	it("validates a complete frame and writer readiness before setting time zero", () => {
 		const clock = callback.indexOf("adjustedPresentationTime(for:");
 		expect(clock).toBeGreaterThan(callback.indexOf("status == .complete"));

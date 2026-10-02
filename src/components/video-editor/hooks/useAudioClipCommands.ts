@@ -5,9 +5,11 @@ import {
 	DETACHED_AUDIO_CLIP_ID_PREFIX,
 	detachClipAudio,
 	findAudioClipAt,
+	getAudioClipSyncOffsetMs,
 	getAudioClipVolume,
 	MAX_AUDIO_CLIP_VOLUME,
 	nextAudioClipNumber,
+	setAudioClipSyncOffset,
 	splitAudioClip,
 } from "../audio/detachedAudio";
 import type { ClipRegion, EditorEffectSection } from "../types";
@@ -163,9 +165,27 @@ export function useAudioClipCommands({
 		[updateSelectedAudioClip],
 	);
 
+	/** Re-syncs the selected audio clip, or every audio clip, against the picture. */
+	const handleAudioClipSyncOffsetChange = useCallback(
+		(offsetMs: number, applyToAll: boolean) => {
+			if (!applyToAll && !selectedAudioClipId) return;
+			const ids = applyToAll ? null : new Set([selectedAudioClipId as string]);
+			setAudioClipRegions((current) =>
+				current ? setAudioClipSyncOffset(current, ids, offsetMs) : current,
+			);
+		},
+		[selectedAudioClipId, setAudioClipRegions],
+	);
+
 	const selectedAudioClip = useMemo(() => {
 		const clip = audioClipRegions?.find((item) => item.id === selectedAudioClipId);
-		return clip ? { volume: getAudioClipVolume(clip), muted: Boolean(clip.muted) } : null;
+		return clip
+			? {
+					volume: getAudioClipVolume(clip),
+					muted: Boolean(clip.muted),
+					syncOffsetMs: getAudioClipSyncOffsetMs(clip),
+				}
+			: null;
 	}, [audioClipRegions, selectedAudioClipId]);
 
 	return {
@@ -179,5 +199,6 @@ export function useAudioClipCommands({
 		handleAudioClipDelete,
 		handleAudioClipVolumeChange,
 		handleAudioClipMutedChange,
+		handleAudioClipSyncOffsetChange,
 	};
 }

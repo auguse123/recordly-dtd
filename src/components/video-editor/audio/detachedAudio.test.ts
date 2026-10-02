@@ -6,9 +6,12 @@ import {
 	detachClipAudio,
 	findAudioClipAt,
 	getAudioClipSourceTimeMs,
+	getAudioClipSyncedSourceSpan,
 	getAudioClipVolume,
 	nextAudioClipNumber,
 	normalizeAudioClipRegions,
+	resolveAudioClipSync,
+	setAudioClipSyncOffset,
 	splitAudioClip,
 } from "./detachedAudio";
 
@@ -139,5 +142,77 @@ describe("helpers", () => {
 		expect(getAudioClipVolume({ volume: -1 })).toBe(0);
 		expect(nextAudioClipNumber([clip({ id: "aclip-4" }), clip({ id: "clip-9" })])).toBe(5);
 		expect(nextAudioClipNumber(null)).toBe(1);
+	});
+});
+
+describe("audio clip sync offset", () => {
+	it("plays the sound later without moving the clip", () => {
+		const clips = [clip({ id: "a", startMs: 2_000, endMs: 5_000, sourceStartMs: 4_000 })];
+		const [resolved] = resolveAudioClipSync(setAudioClipSyncOffset(clips, null, 500));
+		expect(resolved).toEqual({
+			id: "a",
+			startMs: 2_000,
+			endMs: 5_000,
+			sourceStartMs: 3_500,
+			speed: 1,
+		});
+	});
+
+	it("turns sound from before the recording into silence", () => {
+		const clips = setAudioClipSyncOffset([clip({ id: "a", endMs: 20_000 })], null, 9_500);
+		expect(resolveAudioClipSync(clips)).toEqual([
+			{ id: "a", startMs: 9_500, endMs: 20_000, sourceStartMs: 0, speed: 1 },
+		]);
+	});
+
+	it("stays inside the recording bounds of a sequence", () => {
+		const clips = setAudioClipSyncOffset(
+			[clip({ id: "a", sourceStartMs: 1_000, sourceMinMs: 1_000, sourceMaxMs: 2_000 })],
+			null,
+			-300,
+		);
+		expect(resolveAudioClipSync(clips)[0]).toMatchObject({
+			startMs: 0,
+			endMs: 700,
+			sourceStartMs: 1_300,
+		});
+	});
+
+	it("scales the offset by the clip speed", () => {
+		const clips = setAudioClipSyncOffset(
+			[clip({ id: "a", sourceStartMs: 5_000, speed: 2 })],
+			null,
+			1_000,
+		);
+		expect(resolveAudioClipSync(clips)[0].sourceStartMs).toBe(3_000);
+		expect(getAudioClipSyncedSourceSpan(clips[0])).toEqual({ start: 3_000, end: 5_000 });
+	});
+
+	it("offsets only the chosen clips and clears a zero offset", () => {
+		const clips = [clip({ id: "a" }), clip({ id: "b", startMs: 1_000, endMs: 2_000 })];
+		const offset = setAudioClipSyncOffset(clips, new Set(["b"]), 200);
+		expect(offset[0]).toBe(clips[0]);
+		expect(offset[1].syncOffsetMs).toBe(200);
+		expect(setAudioClipSyncOffset(offset, null, 0)[1]).not.toHaveProperty("syncOffsetMs");
+	});
+
+	it("leaves clips untouched when nothing is offset", () => {
+		const clips = [clip({ id: "a" })];
+		expect(resolveAudioClipSync(clips)).toBe(clips);
+	});
+
+	it("drops a clip that would only play silence", () => {
+		const clips = setAudioClipSyncOffset([clip({ id: "a" })], null, 5_000);
+		expect(resolveAudioClipSync(clips)).toEqual([]);
+	});
+
+	it("keeps the offset through save and split", () => {
+		const [saved] =
+			normalizeAudioClipRegions([
+				{ id: "aclip-1", startMs: 0, endMs: 1_000, speed: 1, syncOffsetMs: -250.4 },
+			]) ?? [];
+		expect(saved.syncOffsetMs).toBe(-250);
+		const split = splitAudioClip([saved], "aclip-1", 500, "aclip-2");
+		expect(split?.map((item) => item.syncOffsetMs)).toEqual([-250, -250]);
 	});
 });

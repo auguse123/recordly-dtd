@@ -92,6 +92,18 @@ describe("hasUnsavedProjectChanges", () => {
 		expect(hasUnsavedProjectChanges(current, saved)).toBe(false);
 	});
 
+	it("detects a manual re-sync of the same webcam", () => {
+		const webcam = { enabled: true, sourcePath: "/Users/test/webcam.mp4", size: 28 };
+		const saved = createProjectData({
+			editor: { ...createProjectData().editor, webcam: { ...webcam, timeOffsetMs: 0 } },
+		});
+		const current = createProjectData({
+			editor: { ...createProjectData().editor, webcam: { ...webcam, timeOffsetMs: -9500 } },
+		});
+
+		expect(hasUnsavedProjectChanges(current, saved)).toBe(true);
+	});
+
 	it("detects persistent webcam presentation changes", () => {
 		const saved = createProjectData({
 			editor: {

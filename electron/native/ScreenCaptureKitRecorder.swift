@@ -96,7 +96,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 	private var isRecording = false
 	private var isPaused = false
 	private var pauseStartedHostTime: CMTime?
-	private var pendingResumeAdjustment = false
+	private var resumedAtHostTime: CMTime?
 	private var accumulatedPausedDuration: CMTime = .zero
 	private var sessionStarted = false
 	private var frameCount = 0
@@ -387,7 +387,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		isRecording = true
 		isPaused = false
 		pauseStartedHostTime = nil
-		pendingResumeAdjustment = false
+		resumedAtHostTime = nil
 		accumulatedPausedDuration = .zero
 		frameCount = 0
 		firstSampleTime = .zero
@@ -410,7 +410,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 				}
 				self.isPaused = true
 				self.pauseStartedHostTime = CMClockGetTime(CMClockGetHostTimeClock())
-				self.pendingResumeAdjustment = false
+				self.resumedAtHostTime = nil
 				continuation.resume(returning: true)
 			}
 		}
@@ -424,7 +424,18 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 					return
 				}
 				self.isPaused = false
-				self.pendingResumeAdjustment = true
+				// The pause ends now, not at the next screen frame: ScreenCaptureKit
+				// only delivers complete frames when the screen changes, so waiting
+				// for one dropped every sound made over a still screen (seconds of
+				// voice after the countdown) and shifted the voice against the camera.
+				let resumedAt = CMClockGetTime(CMClockGetHostTimeClock())
+				if let pauseStartedHostTime = self.pauseStartedHostTime,
+				   self.firstSampleTime != .zero,
+				   resumedAt > pauseStartedHostTime {
+					self.accumulatedPausedDuration = self.accumulatedPausedDuration + (resumedAt - pauseStartedHostTime)
+				}
+				self.pauseStartedHostTime = nil
+				self.resumedAtHostTime = resumedAt
 				continuation.resume(returning: true)
 			}
 		}
@@ -713,7 +724,7 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		frameCount = 0
 		isPaused = false
 		pauseStartedHostTime = nil
-		pendingResumeAdjustment = false
+		resumedAtHostTime = nil
 		accumulatedPausedDuration = .zero
 		capturesSystemAudio = false
 		capturesMicrophone = false
@@ -767,20 +778,10 @@ final class ScreenCaptureRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
 		}
 
 		let sampleTime = sampleBuffer.presentationTimeStamp
-		if pendingResumeAdjustment {
-			// Audio and video callbacks share this queue but their timestamps can be
-			// offset slightly. Anchor the post-countdown adjustment to video and drop
-			// audio until that anchor exists; otherwise the first audio callback can
-			// make the following video timestamp move backwards and fail the writer.
-			guard outputType == .screen, let pauseStartedHostTime else {
-				return nil
-			}
-			let pauseGap = sampleTime - pauseStartedHostTime
-			if pauseGap > .zero {
-				accumulatedPausedDuration = accumulatedPausedDuration + pauseGap
-			}
-			self.pauseStartedHostTime = nil
-			pendingResumeAdjustment = false
+		// Samples captured during the pause can still be queued after the resume;
+		// they belong to the removed interval.
+		if let resumedAtHostTime, sampleTime < resumedAtHostTime {
+			return nil
 		}
 
 		if outputType == .screen {

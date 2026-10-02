@@ -121,6 +121,7 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		selectedAudioClip: audioClipCommands.selectedAudioClip,
 		onAudioClipVolumeChange: audioClipCommands.handleAudioClipVolumeChange,
 		onAudioClipMutedChange: audioClipCommands.handleAudioClipMutedChange,
+		onAudioClipSyncOffsetChange: audioClipCommands.handleAudioClipSyncOffsetChange,
 		onAudioClipDelete: audioClipCommands.handleAudioClipDelete,
 		selectedAudioId: timeline.selectedAudioId,
 		selectedAudioVolume: selectedAudio?.volume ?? null,

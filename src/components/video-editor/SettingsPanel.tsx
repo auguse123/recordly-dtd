@@ -59,6 +59,7 @@ import { getDefaultBorderRadiusPercent } from "./projectPersistence";
 import { SettingsRow } from "./SettingsRow";
 import { SettingsCategory, SettingsSections } from "./SettingsSections";
 import { SliderControl } from "./SliderControl";
+import { SyncOffsetControl } from "./SyncOffsetControl";
 import { isSystemCursorActive, SYSTEM_CURSOR_SETTINGS } from "./systemCursor";
 import type {
 	AnnotationRegion,
@@ -470,9 +471,10 @@ interface SettingsPanelProps {
 	onDetachAudio?: () => void;
 	onReattachAudio?: () => void;
 	selectedAudioClipId?: string | null;
-	selectedAudioClip?: { volume: number; muted: boolean } | null;
+	selectedAudioClip?: { volume: number; muted: boolean; syncOffsetMs: number } | null;
 	onAudioClipVolumeChange?: (volume: number) => void;
 	onAudioClipMutedChange?: (muted: boolean) => void;
+	onAudioClipSyncOffsetChange?: (offsetMs: number, applyToAll: boolean) => void;
 	onAudioClipDelete?: (id: string) => void;
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
@@ -951,6 +953,7 @@ export function SettingsPanel({
 	selectedAudioClip = null,
 	onAudioClipVolumeChange,
 	onAudioClipMutedChange,
+	onAudioClipSyncOffsetChange,
 	onAudioClipDelete,
 	selectedAudioId,
 	selectedAudioVolume,
@@ -1075,6 +1078,7 @@ export function SettingsPanel({
 		initialEditorPreferences.customWallpapers,
 	);
 	const [experimentalUpdatesEnabled, setExperimentalUpdatesEnabled] = useState(false);
+	const [syncAllAudioClips, setSyncAllAudioClips] = useState(true);
 	const [savingExperimentalUpdates, setSavingExperimentalUpdates] = useState(false);
 	const { openConfig: openShortcutsConfig } = useShortcuts();
 	const [internalActiveEffectSection] = useState<EditorEffectSection>("scene");
@@ -2867,6 +2871,28 @@ export function SettingsPanel({
 						aria-label={tSettings("audioClip.mute", "Mute audio clip")}
 					/>
 				</label>
+				<SyncOffsetControl
+					label={tSettings("audioClip.syncOffset", "Audio offset")}
+					hint={tSettings(
+						"audioClip.syncOffsetHint",
+						"+ plays the sound later, − earlier, without moving the clip.",
+					)}
+					resetLabel={t("common.actions.reset", "Reset")}
+					valueMs={selectedAudioClip.syncOffsetMs}
+					onChange={(offsetMs) =>
+						onAudioClipSyncOffsetChange?.(offsetMs, syncAllAudioClips)
+					}
+				/>
+				<label className="flex items-center justify-between py-1">
+					<span className="text-xs text-muted-foreground">
+						{tSettings("audioClip.syncAllClips", "Offset every audio clip")}
+					</span>
+					<Switch
+						checked={syncAllAudioClips}
+						onCheckedChange={setSyncAllAudioClips}
+						aria-label={tSettings("audioClip.syncAllClips", "Offset every audio clip")}
+					/>
+				</label>
 				<p className="text-xs text-muted-foreground/70">
 					{tSettings(
 						"clip.detachedHint",
@@ -3332,6 +3358,18 @@ export function SettingsPanel({
 										/>
 									</div>
 								</>
+							)}
+							{webcam?.sourcePath && (
+								<SyncOffsetControl
+									label={tSettings("effects.webcamSyncOffset", "Camera offset")}
+									hint={tSettings(
+										"effects.webcamSyncOffsetHint",
+										"+ shows the camera later, − earlier. Use it when lips and voice drift apart.",
+									)}
+									resetLabel={t("common.actions.reset", "Reset")}
+									valueMs={webcam.timeOffsetMs ?? 0}
+									onChange={(timeOffsetMs) => updateWebcam({ timeOffsetMs })}
+								/>
 							)}
 							<SliderControl
 								label={tSettings("effects.webcamWidth", "Webcam Width")}

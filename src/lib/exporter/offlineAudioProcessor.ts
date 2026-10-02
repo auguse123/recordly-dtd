@@ -1,4 +1,5 @@
 import { SOURCE_AUDIO_NORMALIZE_GAIN } from "@/components/video-editor/audio/audioTypes";
+import { resolveAudioClipSync } from "@/components/video-editor/audio/detachedAudio";
 import {
 	buildAudioRegionGainEnvelope,
 	detectSpeechRanges,
@@ -70,7 +71,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 	protected detachedAudioClips: ClipRegion[] | null = null;
 
 	setDetachedAudioClips(clips: ClipRegion[] | null | undefined): void {
-		this.detachedAudioClips = clips ?? null;
+		this.detachedAudioClips = clips ? resolveAudioClipSync(clips) : null;
 	}
 
 	protected async renderAndMuxOfflineAudio(

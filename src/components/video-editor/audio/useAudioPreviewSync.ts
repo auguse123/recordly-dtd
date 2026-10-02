@@ -16,9 +16,7 @@ import {
 	getVersionedAudioResourceUrl,
 	isAudioResourceLoadCurrent,
 } from "./audioResourceVersion";
-
-const SOURCE_AUDIO_PREVIEW_PLAYING_SEEK_DRIFT_SECONDS = 0.18;
-const SOURCE_AUDIO_PREVIEW_PAUSED_SEEK_DRIFT_SECONDS = 0.01;
+import { getSourceAudioCorrection } from "./sourceAudioDrift";
 
 interface UseAudioPreviewSyncParams {
 	audioRegions: AudioRegion[];
@@ -108,6 +106,7 @@ export function useAudioPreviewSync({
 	const sourceAudioMasterGainRef = useRef<GainNode | null>(null);
 	const sourceAudioResumePromiseRef = useRef<Promise<void> | null>(null);
 	const lastSourceAudioSyncTimeRef = useRef<number | null>(null);
+	const sourceAudioLastSeekAtRef = useRef<WeakMap<HTMLAudioElement, number>>(new WeakMap());
 	const [sourceLoadVersion, setSourceLoadVersion] = useState(0);
 
 	const ensureSourceAudioContext = useCallback(() => {
@@ -417,9 +416,7 @@ export function useAudioPreviewSync({
 		const previousTimelineTime = lastSourceAudioSyncTimeRef.current;
 		const timelineJumped =
 			previousTimelineTime === null || Math.abs(currentTime - previousTimelineTime) > 0.25;
-		const driftThreshold = isPlaying
-			? SOURCE_AUDIO_PREVIEW_PLAYING_SEEK_DRIFT_SECONDS
-			: SOURCE_AUDIO_PREVIEW_PAUSED_SEEK_DRIFT_SECONDS;
+		const nowMs = performance.now();
 		if (sourceAudioMasterGainRef.current) {
 			sourceAudioMasterGainRef.current.gain.value = Math.max(
 				0,
@@ -462,30 +459,36 @@ export function useAudioPreviewSync({
 				audioDuration,
 			);
 
-			const shouldSeek =
-				timelineJumped ||
-				(!isPlaying && Math.abs(audio.currentTime - targetTime) > driftThreshold) ||
-				(isPlaying && Math.abs(audio.currentTime - targetTime) > 0.9);
-			if (shouldSeek) {
+			// The track follows the picture within a frame: tiny drift is eased out
+			// with a bounded rate nudge, cuts and late starts are fixed by a seek.
+			const lastSeekAtMs = sourceAudioLastSeekAtRef.current.get(audio) ?? -Infinity;
+			const correction = getSourceAudioCorrection({
+				audioTime: audio.currentTime,
+				targetTime,
+				isPlaying: isPlaying && !audio.paused,
+				basePlaybackRate: sourcePlaybackRate,
+				timelineJumped,
+				msSinceLastSeek: nowMs - lastSeekAtMs,
+			});
+			if (correction.seek) {
 				try {
 					audio.currentTime = targetTime;
+					sourceAudioLastSeekAtRef.current.set(audio, nowMs);
 				} catch {
 					// no-op
 				}
 			}
-
-			// KISS for companion source tracks: fixed playback rate avoids audible flutter/stutter
-			// from continuous micro-corrections on system audio.
-			const syncedPlaybackRate = sourcePlaybackRate;
-			if (Math.abs(audio.playbackRate - syncedPlaybackRate) > 0.001) {
-				audio.playbackRate = syncedPlaybackRate;
+			if (Math.abs(audio.playbackRate - correction.playbackRate) > 0.001) {
+				audio.playbackRate = correction.playbackRate;
 			}
 
 			const atEnd = audioDuration !== null && targetTime >= audioDuration;
 			if (isPlaying && !isCurrentClipMuted && !beforeAudioStart && !atEnd) {
-				void ensureSourceAudioRunning().then(() => {
-					if (!cancelled) audio.play().catch(() => undefined);
-				});
+				if (audio.paused || sourceAudioContextRef.current?.state !== "running") {
+					void ensureSourceAudioRunning().then(() => {
+						if (!cancelled) audio.play().catch(() => undefined);
+					});
+				}
 			} else if (!audio.paused) {
 				audio.pause();
 			}

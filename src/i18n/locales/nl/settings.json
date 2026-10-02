@@ -150,6 +150,8 @@
 		"webcamCrop": "Webcam bijsnijden",
 		"webcamReactToZoom": "Webcam reageert op zoom",
 		"webcamMirror": "Webcam spiegelen",
+		"webcamSyncOffset": "Camera-verschuiving",
+		"webcamSyncOffsetHint": "+ toont de camera later, − eerder. Gebruik dit als lippen en stem niet gelijk lopen.",
 		"webcamRoundness": "Webcam-afronding",
 		"webcamShadow": "Webcamschaduw",
 		"shadow": "Schaduw",
@@ -354,6 +356,9 @@
 		"title": "Audio clip",
 		"volume": "Volume",
 		"mute": "Mute audio clip",
-		"delete": "Delete audio clip"
+		"delete": "Delete audio clip",
+		"syncOffset": "Audio-verschuiving",
+		"syncOffsetHint": "+ speelt het geluid later, − eerder, zonder de clip te verplaatsen.",
+		"syncAllClips": "Alle audioclips verschuiven"
 	}
 }

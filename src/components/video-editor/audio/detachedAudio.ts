@@ -2,6 +2,7 @@ import { changeClipSpan } from "../clipSpanChange";
 import {
 	type ClipRegion,
 	findClipAtTimelineTime,
+	getClipSourceEndMs,
 	getClipSourceStartMs,
 	sortClipRegions,
 } from "../types";
@@ -18,6 +19,69 @@ export function getAudioClipVolume(clip: Pick<ClipRegion, "volume">): number {
 	return typeof clip.volume === "number" && Number.isFinite(clip.volume)
 		? Math.max(0, Math.min(MAX_AUDIO_CLIP_VOLUME, clip.volume))
 		: 1;
+}
+
+export function getAudioClipSyncOffsetMs(clip: Pick<ClipRegion, "syncOffsetMs">): number {
+	return typeof clip.syncOffsetMs === "number" && Number.isFinite(clip.syncOffsetMs)
+		? Math.round(clip.syncOffsetMs)
+		: 0;
+}
+
+/** Sets the sync offset of the given audio clips (all clips when `ids` is null). */
+export function setAudioClipSyncOffset(
+	clips: ClipRegion[],
+	ids: ReadonlySet<string> | null,
+	offsetMs: number,
+): ClipRegion[] {
+	const value = Number.isFinite(offsetMs) ? Math.round(offsetMs) : 0;
+	return clips.map((clip) => {
+		if (ids && !ids.has(clip.id)) return clip;
+		if (getAudioClipSyncOffsetMs(clip) === value) return clip;
+		const { syncOffsetMs: _previous, ...rest } = clip;
+		return value === 0 ? rest : { ...rest, syncOffsetMs: value };
+	});
+}
+
+/** The recording span an audio clip reads once its sync offset is applied, unclamped. */
+export function getAudioClipSyncedSourceSpan(clip: ClipRegion): { start: number; end: number } {
+	const shiftMs = getAudioClipSyncOffsetMs(clip) * safeSpeed(clip);
+	return {
+		start: getClipSourceStartMs(clip) - shiftMs,
+		end: getClipSourceEndMs(clip) - shiftMs,
+	};
+}
+
+/**
+ * Bakes each clip's sync offset into where it reads in the recording, the
+ * form playback and export work with. The part of a clip that would read
+ * before or after its recording is trimmed to silence; a clip with nothing
+ * left to play is dropped. Returns `clips` itself when no clip is offset.
+ */
+export function resolveAudioClipSync(clips: ClipRegion[]): ClipRegion[] {
+	if (!clips.some((clip) => getAudioClipSyncOffsetMs(clip) !== 0)) return clips;
+	return clips.flatMap((clip) => {
+		const offsetMs = getAudioClipSyncOffsetMs(clip);
+		const { syncOffsetMs: _offset, ...rest } = clip;
+		if (offsetMs === 0) return [rest];
+		const speed = safeSpeed(clip);
+		const span = getAudioClipSyncedSourceSpan(clip);
+		const minSourceMs = Number.isFinite(clip.sourceMinMs) ? (clip.sourceMinMs as number) : 0;
+		const maxSourceMs = Number.isFinite(clip.sourceMaxMs) ? (clip.sourceMaxMs as number) : null;
+		let startMs = clip.startMs;
+		let endMs = clip.endMs;
+		let sourceStartMs = span.start;
+		if (sourceStartMs < minSourceMs) {
+			startMs += (minSourceMs - sourceStartMs) / speed;
+			sourceStartMs = minSourceMs;
+		}
+		if (maxSourceMs !== null && span.end > maxSourceMs) {
+			endMs -= (span.end - maxSourceMs) / speed;
+		}
+		startMs = Math.round(startMs);
+		endMs = Math.round(endMs);
+		if (endMs - startMs < 1) return [];
+		return [{ ...rest, startMs, endMs, sourceStartMs: Math.round(sourceStartMs) }];
+	});
 }
 
 /**
@@ -149,6 +213,7 @@ export function normalizeAudioClipRegions(value: unknown): ClipRegion[] | null {
 		const sourceMinMs = finiteNumber(candidate.sourceMinMs);
 		const sourceMaxMs = finiteNumber(candidate.sourceMaxMs);
 		const volume = finiteNumber(candidate.volume);
+		const syncOffsetMs = finiteNumber(candidate.syncOffsetMs);
 		clips.push({
 			id: candidate.id,
 			startMs: start,
@@ -159,6 +224,7 @@ export function normalizeAudioClipRegions(value: unknown): ClipRegion[] | null {
 			speed: speed !== undefined && speed > 0 ? speed : 1,
 			...(candidate.muted === true ? { muted: true } : {}),
 			...(volume !== undefined ? { volume: getAudioClipVolume({ volume }) } : {}),
+			...(syncOffsetMs ? { syncOffsetMs: Math.round(syncOffsetMs) } : {}),
 		});
 	}
 	const sorted = sortClipRegions(clips);

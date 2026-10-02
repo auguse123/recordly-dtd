@@ -150,6 +150,8 @@
 		"webcamCrop": "Обрезка веб-камеры",
 		"webcamReactToZoom": "Веб-камера реагирует на зум",
 		"webcamMirror": "Отразить веб-камеру",
+		"webcamSyncOffset": "Сдвиг камеры",
+		"webcamSyncOffsetHint": "+ показывает камеру позже, − раньше. Используйте, если губы и голос расходятся.",
 		"webcamRoundness": "Скругление веб-камеры",
 		"webcamShadow": "Тень веб-камеры",
 		"shadow": "Тень",
@@ -354,6 +356,9 @@
 		"title": "Audio clip",
 		"volume": "Volume",
 		"mute": "Mute audio clip",
-		"delete": "Delete audio clip"
+		"delete": "Delete audio clip",
+		"syncOffset": "Сдвиг звука",
+		"syncOffsetHint": "+ воспроизводит звук позже, − раньше, не перемещая клип.",
+		"syncAllClips": "Сдвигать все аудиоклипы"
 	}
 }

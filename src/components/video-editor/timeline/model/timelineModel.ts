@@ -1,4 +1,4 @@
-import { getAudioClipVolume } from "../../audio/detachedAudio";
+import { getAudioClipSyncedSourceSpan, getAudioClipVolume } from "../../audio/detachedAudio";
 import { formatClipSpeedLabel } from "../../clipSpeedChange";
 import type {
 	AnnotationRegion,
@@ -114,7 +114,7 @@ export function buildTimelineItems(params: {
 			id: region.id,
 			rowId: DETACHED_AUDIO_ROW_ID,
 			span: { start: region.startMs, end: region.endMs },
-			sourceSpan: { start: getClipSourceStartMs(region), end: getClipSourceEndMs(region) },
+			sourceSpan: getAudioClipSyncedSourceSpan(region),
 			label: `Audio ${index + 1}`,
 			audioGain: getAudioClipVolume(region),
 			muted: Boolean(region.muted),

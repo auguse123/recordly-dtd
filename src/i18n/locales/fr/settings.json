@@ -150,6 +150,8 @@
 		"webcamCrop": "Recadrage de la webcam",
 		"webcamReactToZoom": "La webcam réagit au zoom",
 		"webcamMirror": "Miroir webcam",
+		"webcamSyncOffset": "Décalage caméra",
+		"webcamSyncOffsetHint": "+ retarde la caméra, − l’avance. À utiliser si les lèvres et la voix sont décalées.",
 		"webcamRoundness": "Arrondi de la webcam",
 		"webcamShadow": "Ombre de la webcam",
 		"shadow": "Ombre",
@@ -354,6 +356,9 @@
 		"title": "Clip son",
 		"volume": "Volume",
 		"mute": "Couper le clip son",
-		"delete": "Supprimer le clip son"
+		"delete": "Supprimer le clip son",
+		"syncOffset": "Décalage son",
+		"syncOffsetHint": "+ retarde le son, − l’avance, sans déplacer le clip.",
+		"syncAllClips": "Décaler tous les clips audio"
 	}
 }

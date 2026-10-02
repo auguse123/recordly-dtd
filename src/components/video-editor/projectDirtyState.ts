@@ -79,6 +79,27 @@ export function hasUnsavedProjectChanges(
 	return Boolean(
 		comparableCurrentSnapshot &&
 			(!comparableLastSavedSnapshot ||
-				!areDeepEqual(comparableCurrentSnapshot, comparableLastSavedSnapshot)),
+				!areDeepEqual(comparableCurrentSnapshot, comparableLastSavedSnapshot) ||
+				hasWebcamSyncOffsetChanged(currentProjectSnapshot, lastSavedSnapshot)),
 	);
+}
+
+function getWebcamFields(project: EditorProjectData | null): Record<string, unknown> | null {
+	const editor = project?.editor as Record<string, unknown> | undefined;
+	return isComparableObject(editor?.webcam) ? editor.webcam : null;
+}
+
+/**
+ * Attaching a webcam brings its recorded offset along, which is not an edit;
+ * re-syncing the same webcam by hand is.
+ */
+function hasWebcamSyncOffsetChanged(
+	current: EditorProjectData | null,
+	saved: EditorProjectData | null,
+): boolean {
+	const currentWebcam = getWebcamFields(current);
+	const savedWebcam = getWebcamFields(saved);
+	if (!currentWebcam || !savedWebcam || !currentWebcam.sourcePath) return false;
+	if (currentWebcam.sourcePath !== savedWebcam.sourcePath) return false;
+	return (currentWebcam.timeOffsetMs ?? 0) !== (savedWebcam.timeOffsetMs ?? 0);
 }

@@ -150,6 +150,8 @@
 		"webcamCrop": "摄像头裁剪",
 		"webcamReactToZoom": "摄像头随缩放变化",
 		"webcamMirror": "镜像摄像头",
+		"webcamSyncOffset": "摄像头偏移",
+		"webcamSyncOffsetHint": "+ 让摄像头画面延后，− 提前。口型与声音不同步时使用。",
 		"webcamRoundness": "摄像头圆角",
 		"webcamShadow": "摄像头阴影",
 		"shadow": "阴影",
@@ -354,6 +356,9 @@
 		"title": "Audio clip",
 		"volume": "Volume",
 		"mute": "Mute audio clip",
-		"delete": "Delete audio clip"
+		"delete": "Delete audio clip",
+		"syncOffset": "音频偏移",
+		"syncOffsetHint": "+ 让声音延后，− 提前，不移动片段。",
+		"syncAllClips": "偏移所有音频片段"
 	}
 }
