@@ -10,6 +10,7 @@ Demandes d'Augustin (2026-10-01), à faire petit à petit.
 | 8 | Formes (rectangle, cercle pour encadrer) + bandeau nom ; texte existe déjà | fait : formes + bandeau nom (option « Bandeau nom » d'une annotation texte : nom en ligne 1, fonction dessous, barre d'accent) |
 | 6 | Choisir un cadre au format cible au moment d'enregistrer (cadre affiché par-dessus l'écran) | fait : bouton cadre dans la barre d'enregistrement (16:9, 9:16, 1:1, 4:5), écrans seulement ; l'éditeur s'ouvre au bon format avec le recadrage |
 | 7 | Kit de partage : dossier MP4 + GIF + vignette avec bouton lecture (option B) | fait (bouton après export MP4) |
+| 10 | Son et vidéo en pistes séparées (traitement audio externe) | fait : bouton « Pistes séparées » après export MP4 (vidéo sans son + son complet WAV + voix brute WAV alignée sur l'intro) ; section « Voix » (exporter la voix brute complète en WAV, réimporter la voix traitée, revenir à la précédente) |
 | 9 | Lien de partage hébergé (desk-to-desk.com) avec suivi des vues | plus tard |
 | — | Versions personnalisées par prospect (« Bonjour Marie… ») | idée, à valider |
 | — | Vidéo de sélection de bureaux générée depuis une URL | idée, à valider |
