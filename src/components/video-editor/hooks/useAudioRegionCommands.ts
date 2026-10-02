@@ -1,5 +1,6 @@
 import type { Span } from "dnd-timeline";
 import { type Dispatch, type MutableRefObject, type SetStateAction, useCallback } from "react";
+import { type AudioRegionMix, getAudioRegionMix } from "../audio/musicDucking";
 import type { AudioRegion, EditorEffectSection } from "../types";
 
 interface UseAudioRegionCommandsParams {
@@ -135,6 +136,20 @@ export function useAudioRegionCommands({
 		[selectedAudioId, setAudioRegions],
 	);
 
+	const handleAudioMixChange = useCallback(
+		(patch: Partial<AudioRegionMix>) => {
+			if (!selectedAudioId) return;
+			setAudioRegions((current) =>
+				current.map((region) =>
+					region.id === selectedAudioId
+						? { ...region, ...getAudioRegionMix({ ...region, ...patch }) }
+						: region,
+				),
+			);
+		},
+		[selectedAudioId, setAudioRegions],
+	);
+
 	return {
 		handleSelectAudio,
 		handleAudioAdded,
@@ -142,5 +157,6 @@ export function useAudioRegionCommands({
 		handleAudioVolumeChange,
 		handleAudioDelete,
 		handleAudioNormalizeChange,
+		handleAudioMixChange,
 	};
 }

@@ -30,6 +30,11 @@ import { useI18n, useScopedT } from "../../contexts/I18nContext";
 import type { AppLocale } from "../../i18n/config";
 import { SUPPORTED_LOCALES } from "../../i18n/config";
 import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
+import {
+	type AudioRegionMix,
+	DEFAULT_DUCKING_LEVEL,
+	MIN_DUCKING_LEVEL,
+} from "./audio/musicDucking";
 import CaptionListPanel from "./CaptionListPanel";
 import { ColorGradePanel } from "./ColorGradePanel";
 import type { CaptionRetimeSpan } from "./captionOps";
@@ -464,6 +469,8 @@ interface SettingsPanelProps {
 	selectedAudioNormalize?: boolean | null;
 	onAudioVolumeChange?: (volume: number) => void;
 	onAudioNormalizeChange?: (normalize: boolean) => void;
+	selectedAudioMix?: AudioRegionMix | null;
+	onAudioMixChange?: (patch: Partial<AudioRegionMix>) => void;
 	onAudioDelete?: (id: string) => void;
 	shadowIntensity?: number;
 	onShadowChange?: (intensity: number) => void;
@@ -930,6 +937,8 @@ export function SettingsPanel({
 	selectedAudioId,
 	selectedAudioVolume,
 	selectedAudioNormalize,
+	selectedAudioMix,
+	onAudioMixChange,
 	onAudioVolumeChange,
 	onAudioNormalizeChange,
 	onAudioDelete,
@@ -2726,6 +2735,12 @@ export function SettingsPanel({
 						onClick={() => {
 							onAudioVolumeChange?.(1);
 							onAudioNormalizeChange?.(false);
+							onAudioMixChange?.({
+								fadeInMs: 0,
+								fadeOutMs: 0,
+								ducking: false,
+								duckingLevel: DEFAULT_DUCKING_LEVEL,
+							});
 						}}
 					>
 						{t("common.actions.reset", "Reset")}
@@ -2750,6 +2765,51 @@ export function SettingsPanel({
 						onCheckedChange={(v) => onAudioNormalizeChange?.(v)}
 					/>
 				</div>
+				<SliderControl
+					label={tSettings("audio.fadeIn", "Fade in")}
+					value={(selectedAudioMix?.fadeInMs ?? 0) / 1000}
+					min={0}
+					max={5}
+					step={0.1}
+					onChange={(v) => onAudioMixChange?.({ fadeInMs: v * 1000 })}
+					formatValue={(v) => `${v.toFixed(1)} s`}
+				/>
+				<SliderControl
+					label={tSettings("audio.fadeOut", "Fade out")}
+					value={(selectedAudioMix?.fadeOutMs ?? 0) / 1000}
+					min={0}
+					max={5}
+					step={0.1}
+					onChange={(v) => onAudioMixChange?.({ fadeOutMs: v * 1000 })}
+					formatValue={(v) => `${v.toFixed(1)} s`}
+				/>
+				<div className="flex items-center justify-between py-2">
+					<span className="text-xs text-muted-foreground">
+						{tSettings("audio.ducking", "Lower when I speak")}
+					</span>
+					<Switch
+						aria-label={tSettings("audio.ducking", "Lower when I speak")}
+						checked={Boolean(selectedAudioMix?.ducking)}
+						onCheckedChange={(ducking) => onAudioMixChange?.({ ducking })}
+					/>
+				</div>
+				{selectedAudioMix?.ducking && (
+					<SliderControl
+						label={tSettings("audio.duckingLevel", "Volume while speaking")}
+						value={selectedAudioMix.duckingLevel}
+						min={MIN_DUCKING_LEVEL}
+						max={0.8}
+						step={0.05}
+						onChange={(duckingLevel) => onAudioMixChange?.({ duckingLevel })}
+						formatValue={(v) => `${Math.round(v * 100)}%`}
+					/>
+				)}
+				<p className="text-[11px] leading-relaxed text-muted-foreground">
+					{tSettings(
+						"audio.duckingHint",
+						"Use this on music: it dips under your voice, in the preview and the export.",
+					)}
+				</p>
 			</section>
 		);
 

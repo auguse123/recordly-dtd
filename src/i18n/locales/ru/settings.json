@@ -262,7 +262,12 @@
 		"systemLabel": "Системный звук",
 		"micLabel": "Микрофон",
 		"mixedLabel": "Источник",
-		"deleteRegion": "Удалить аудио"
+		"deleteRegion": "Удалить аудио",
+		"fadeIn": "Fade in",
+		"fadeOut": "Fade out",
+		"ducking": "Lower when I speak",
+		"duckingLevel": "Volume while speaking",
+		"duckingHint": "Use this on music: it dips under your voice, in the preview and the export."
 	},
 	"updates": {
 		"title": "Обновления",

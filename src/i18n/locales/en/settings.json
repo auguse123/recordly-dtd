@@ -268,7 +268,12 @@
 		"systemLabel": "Source System",
 		"micLabel": "Source Mic",
 		"mixedLabel": "Source",
-		"deleteRegion": "Delete Audio"
+		"deleteRegion": "Delete Audio",
+		"fadeIn": "Fade in",
+		"fadeOut": "Fade out",
+		"ducking": "Lower when I speak",
+		"duckingLevel": "Volume while speaking",
+		"duckingHint": "Use this on music: it dips under your voice, in the preview and the export."
 	},
 	"introOutro": {
 		"heading": "Intro / Outro",

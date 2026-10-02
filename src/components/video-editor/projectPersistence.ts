@@ -1,4 +1,5 @@
 import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/audioTypes";
+import { getAudioRegionMix } from "@/components/video-editor/audio/musicDucking";
 import type {
 	ExportBackendPreference,
 	ExportEncodingMode,
@@ -687,6 +688,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 						trackIndex: isFiniteNumber(region.trackIndex)
 							? Math.max(0, Math.floor(region.trackIndex))
 							: 0,
+						...getAudioRegionMix(region),
 					};
 				})
 		: [];

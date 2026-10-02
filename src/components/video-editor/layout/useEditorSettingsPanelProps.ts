@@ -1,5 +1,6 @@
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
+import { getAudioRegionMix } from "../audio/musicDucking";
 import { useClipAudioReset } from "../audio/useClipAudioReset";
 import type { useAutoCaptionController } from "../captions/useAutoCaptionController";
 import { findMicSidecarPath } from "../export/separateTracks";
@@ -116,6 +117,8 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 			selectedAudio?.normalize ?? (timeline.selectedAudioId ? false : null),
 		onAudioVolumeChange: audioCommands.handleAudioVolumeChange,
 		onAudioNormalizeChange: audioCommands.handleAudioNormalizeChange,
+		selectedAudioMix: selectedAudio ? getAudioRegionMix(selectedAudio) : null,
+		onAudioMixChange: audioCommands.handleAudioMixChange,
 		onAudioDelete: audioCommands.handleAudioDelete,
 		shadowIntensity: appearance.shadowIntensity,
 		onShadowChange: appearance.setShadowIntensity,

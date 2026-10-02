@@ -370,7 +370,7 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
  * Automate `param` along a piecewise-linear gain curve (output ms) over the
  * output range [startSec, endSec], scheduled in chunk-local time.
  */
-function applyGainEnvelope(
+export function applyGainEnvelope(
 	param: AudioParam,
 	baseGain: number,
 	envelope: readonly GainPoint[],

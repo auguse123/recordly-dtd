@@ -262,7 +262,12 @@
 		"systemLabel": "系統源",
 		"micLabel": "麥克風源",
 		"mixedLabel": "源",
-		"deleteRegion": "刪除音訊"
+		"deleteRegion": "刪除音訊",
+		"fadeIn": "Fade in",
+		"fadeOut": "Fade out",
+		"ducking": "Lower when I speak",
+		"duckingLevel": "Volume while speaking",
+		"duckingHint": "Use this on music: it dips under your voice, in the preview and the export."
 	},
 	"updates": {
 		"experimentalDescription": "你已選擇接收實驗性更新，因此可以在 Recordly 最新更新廣泛推出之前選擇先行測試。",

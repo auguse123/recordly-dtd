@@ -1,5 +1,15 @@
 import { SOURCE_AUDIO_NORMALIZE_GAIN } from "@/components/video-editor/audio/audioTypes";
 import {
+	buildAudioRegionGainEnvelope,
+	detectSpeechRanges,
+	getClipOutputSegments,
+	hasDuckingRegion,
+	mapSourceRangesToOutput,
+	type SourceToOutputSegment,
+	type TimeRangeMs,
+} from "@/components/video-editor/audio/musicDucking";
+import {
+	type GainPoint,
 	getTransitionGainEnvelope,
 	resolveClipTransitions,
 } from "@/components/video-editor/clipTransitions";
@@ -31,7 +41,23 @@ import {
 	type TimelineSlice,
 	type TrimLikeRegion,
 } from "./audioProcessorShared";
+import { applyGainEnvelope } from "./audioTimelineProcessor";
 import type { VideoMuxer } from "./muxer";
+
+/** Trim-and-speed slices laid end to end, as source-to-output segments. */
+function toOutputSegments(slices: readonly TimelineSlice[]): SourceToOutputSegment[] {
+	let outputStartMs = 0;
+	return slices.map((slice) => {
+		const start = slice.outputStartMs ?? outputStartMs;
+		outputStartMs = start + (slice.sourceEndMs - slice.sourceStartMs) / slice.speed;
+		return {
+			sourceStartMs: slice.sourceStartMs,
+			sourceEndMs: slice.sourceEndMs,
+			speed: slice.speed,
+			outputStartMs: start,
+		};
+	});
+}
 
 export class OfflineAudioProcessor extends AudioMediaProcessor {
 	/** Render sidecar tracks only, leaving out the audio muxed into the video. */
@@ -112,6 +138,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			startDelaySec: number;
 			gain: number;
 		}> = [];
+		let micEntry: { buffer: AudioBuffer; startDelaySec: number } | null = null;
 		const refDuration =
 			mainBuffer?.duration ??
 			(resolvedPlan.playbackPaths.length > 0 ? await this.getMediaDurationSec(videoUrl) : 0);
@@ -120,23 +147,23 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			const buffer = await this.decodeAudioFromUrl(audioPath);
 			if (!buffer) continue;
 
-			companionEntries.push({
+			const trackId = getSourceTrackIdFromPath(audioPath);
+			const entry = {
 				buffer,
-				gain: resolveSourceTrackGain(
-					sourceAudioTrackSettings,
-					getSourceTrackIdFromPath(audioPath),
-				),
+				gain: resolveSourceTrackGain(sourceAudioTrackSettings, trackId),
 				startDelaySec: estimateCompanionAudioStartDelaySeconds(
 					refDuration,
 					buffer.duration,
 					sourceAudioFallbackStartDelayMsByPath?.[audioPath],
 				),
-			});
+			};
+			companionEntries.push(entry);
+			if (trackId === "mic" && !micEntry) micEntry = entry;
 		}
 		if (this.cancelled) throw new Error("Export cancelled");
 
 		// Decode audio region overlay files
-		const regionEntries: Array<{ buffer: AudioBuffer; region: AudioRegion }> = [];
+		const regionEntries: PreparedOfflineRender["regionEntries"] = [];
 		for (const region of audioRegions) {
 			if (this.cancelled) throw new Error("Export cancelled");
 			const buffer = await this.decodeAudioFromUrl(region.audioPath);
@@ -183,6 +210,34 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 				? region.endMs
 				: this.sourceTimeToOutputTime(region.endMs, slices);
 			outputDurationMs = Math.max(outputDurationMs, regionEndOutput);
+		}
+
+		if (
+			regionEntries.some(
+				({ region }) => region.fadeInMs || region.fadeOutMs || region.ducking,
+			)
+		) {
+			const speechOutputRanges = hasDuckingRegion(audioRegions)
+				? await this.detectOutputSpeechRanges(
+						micEntry ??
+							(mainBuffer ? { buffer: mainBuffer, startDelaySec: 0 } : null) ??
+							companionEntries[0] ??
+							null,
+						videoUrl,
+						clipRegions ? getClipOutputSegments(clipRegions) : toOutputSegments(slices),
+					)
+				: [];
+			for (const entry of regionEntries) {
+				const { region } = entry;
+				const outputRegion = clipRegions
+					? region
+					: {
+							...region,
+							startMs: this.sourceTimeToOutputTime(region.startMs, slices),
+							endMs: this.sourceTimeToOutputTime(region.endMs, slices),
+						};
+				entry.gainEnvelope = buildAudioRegionGainEnvelope(outputRegion, speechOutputRanges);
+			}
 		}
 
 		const numChannels = Math.min(primaryBuffer?.numberOfChannels ?? 2, 2);
@@ -363,7 +418,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			}
 
 			// Schedule audio region overlays
-			for (const { buffer, region } of prepared.regionEntries) {
+			for (const { buffer, region, gainEnvelope } of prepared.regionEntries) {
 				this.scheduleRegionForChunk(
 					offlineCtx,
 					buffer,
@@ -372,6 +427,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					outputOffsetSec,
 					chunkSec,
 					prepared.usesClipTimeline,
+					gainEnvelope,
 				);
 			}
 
@@ -386,6 +442,29 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 		}
 	}
 
+	/**
+	 * When the voice speaks, on the output timeline. The voice is the mic
+	 * sidecar when there is one, else the recording's own sound.
+	 */
+	protected async detectOutputSpeechRanges(
+		voice: { buffer: AudioBuffer; startDelaySec: number } | null,
+		videoUrl: string,
+		segments: SourceToOutputSegment[],
+	): Promise<TimeRangeMs[]> {
+		let resolvedVoice = voice;
+		if (!resolvedVoice) {
+			const buffer = await this.decodeAudioFromUrl(videoUrl);
+			resolvedVoice = buffer ? { buffer, startDelaySec: 0 } : null;
+		}
+		if (!resolvedVoice) return [];
+		const { buffer, startDelaySec } = resolvedVoice;
+		const channels = Array.from({ length: buffer.numberOfChannels }, (_, channel) =>
+			buffer.getChannelData(channel),
+		);
+		const sourceRanges = detectSpeechRanges(channels, buffer.sampleRate, startDelaySec * 1000);
+		return mapSourceRangesToOutput(sourceRanges, segments);
+	}
+
 	// Schedule an audio region overlay clipped to a specific chunk window.
 	protected scheduleRegionForChunk(
 		ctx: OfflineAudioContext,
@@ -395,6 +474,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 		chunkOutputStartSec: number,
 		chunkDurationSec: number,
 		usesClipTimeline = false,
+		gainEnvelope: readonly GainPoint[] = [],
 	): void {
 		const outputStartMs = usesClipTimeline
 			? region.startMs
@@ -424,7 +504,16 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 
 		const gainNode = ctx.createGain();
 		const normalizeGain = region.normalize ? SOURCE_AUDIO_NORMALIZE_GAIN : 1;
-		gainNode.gain.value = Math.max(0, Math.min(1, region.volume * normalizeGain));
+		const baseGain = Math.max(0, Math.min(1, region.volume * normalizeGain));
+		gainNode.gain.value = baseGain;
+		applyGainEnvelope(
+			gainNode.gain,
+			baseGain,
+			gainEnvelope,
+			chunkOutputStartSec + localStartSec,
+			chunkOutputStartSec + localStartSec + duration,
+			chunkOutputStartSec,
+		);
 		gainNode.connect(ctx.destination);
 
 		const source = ctx.createBufferSource();

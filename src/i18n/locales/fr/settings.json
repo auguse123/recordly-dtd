@@ -262,7 +262,12 @@
 		"systemLabel": "Son système",
 		"micLabel": "Microphone",
 		"mixedLabel": "Source",
-		"deleteRegion": "Supprimer la zone audio"
+		"deleteRegion": "Supprimer la zone audio",
+		"fadeIn": "Fondu d'entrée",
+		"fadeOut": "Fondu de sortie",
+		"ducking": "Baisser quand je parle",
+		"duckingLevel": "Volume pendant la voix",
+		"duckingHint": "À utiliser sur la musique : elle baisse sous ta voix, dans l'aperçu et l'export."
 	},
 	"updates": {
 		"experimentalDescription": "Vous avez activé les mises à jour expérimentales, vous pouvez donc tester la dernière mise à jour de Recordly avant sa disponibilité générale.",

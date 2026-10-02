@@ -7,6 +7,7 @@ import { findClipAtTimelineTime } from "../types";
 import { isClipMutedById } from "./clipAudio";
 import { useAudioPreviewSync } from "./useAudioPreviewSync";
 import { useClipAudioSettingsController } from "./useClipAudioSettingsController";
+import { useMusicDuckingEnvelopes } from "./useMusicDuckingEnvelopes";
 import { useSourceAudioFallback } from "./useSourceAudioFallback";
 
 function extractLocalPathFromMediaServerUrl(input: string | null | undefined): string | null {
@@ -120,6 +121,19 @@ export function useVideoEditorAudio({
 		setDefaultSourceAudioTrackSettings,
 	});
 
+	const micSidecarPath = useMemo(
+		() => sourceAudioFallbackPaths.find((path) => path.includes(".mic.")) ?? null,
+		[sourceAudioFallbackPaths],
+	);
+	const userTrackGainEnvelopes = useMusicDuckingEnvelopes({
+		audioRegions,
+		clipRegions,
+		voicePath: micSidecarPath ?? fallbackLookupSourcePath,
+		voiceStartDelayMs: micSidecarPath
+			? (sourceAudioFallbackStartDelayMsByPath[micSidecarPath] ?? 0)
+			: 0,
+	});
+
 	const { playSourceAudioPreview } = useAudioPreviewSync({
 		audioRegions,
 		previewVolume,
@@ -133,6 +147,7 @@ export function useVideoEditorAudio({
 		sourceAudioResourceVersion: sourceAudioFallbackRefreshKey,
 		isCurrentClipMuted,
 		sourceTransitionGain,
+		userTrackGainEnvelopes,
 		getSourceTrackPreviewGain,
 		onSourceFallbackLoadError,
 	});

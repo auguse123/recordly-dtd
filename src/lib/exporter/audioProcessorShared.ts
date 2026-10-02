@@ -120,7 +120,12 @@ export interface PreparedOfflineRender {
 	usesClipTimeline?: boolean;
 	mainBufferEntry: { buffer: AudioBuffer; gain: number } | null;
 	companionEntries: Array<{ buffer: AudioBuffer; startDelaySec: number; gain: number }>;
-	regionEntries: Array<{ buffer: AudioBuffer; region: AudioRegion }>;
+	regionEntries: Array<{
+		buffer: AudioBuffer;
+		region: AudioRegion;
+		/** Fades and ducking of the region (output ms). */
+		gainEnvelope?: GainPoint[];
+	}>;
 	mutedSourceOutputRangesSec: Array<{ startSec: number; endSec: number }>;
 	/** Fades of the recording's sound around clip transitions (output ms). */
 	sourceGainEnvelope?: GainPoint[];

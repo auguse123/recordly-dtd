@@ -8,6 +8,7 @@ import {
 	getMediaSyncPlaybackRate,
 	resolvePreviewMediaDuration,
 } from "@/lib/mediaTiming";
+import { type GainPoint, getGainAt } from "../clipTransitions";
 import type { AudioRegion } from "../types";
 import { supportsPreviewPlaybackRate } from "../videoPlayback/playbackRate";
 import {
@@ -33,6 +34,8 @@ interface UseAudioPreviewSyncParams {
 	isCurrentClipMuted: boolean;
 	/** Fade of the recording's sound around clip transitions, 0–1. */
 	sourceTransitionGain?: number;
+	/** Fades and ducking of the audio regions (timeline ms), by region id. */
+	userTrackGainEnvelopes?: ReadonlyMap<string, GainPoint[]>;
 	getSourceTrackPreviewGain: (audioPath: string) => number;
 	onSourceFallbackLoadError: (error: unknown) => void;
 }
@@ -50,6 +53,7 @@ export function useAudioPreviewSync({
 	sourceAudioResourceVersion,
 	isCurrentClipMuted,
 	sourceTransitionGain = 1,
+	userTrackGainEnvelopes,
 	getSourceTrackPreviewGain,
 	onSourceFallbackLoadError,
 }: UseAudioPreviewSyncParams) {
@@ -350,6 +354,15 @@ export function useAudioPreviewSync({
 			const startMs = track.timelineBinding.startMs;
 			const endMs = track.timelineBinding.endMs;
 			const isInRegion = currentTimeMs >= startMs && currentTimeMs < endMs;
+			const envelope = userTrackGainEnvelopes?.get(track.id.replace(/^user:/, ""));
+			const envelopeGain = envelope ? getGainAt(envelope, currentTimeMs) : 1;
+			const targetVolume = Math.max(
+				0,
+				Math.min(1, track.gain * previewVolume * envelopeGain),
+			);
+			if (Math.abs(audio.volume - targetVolume) > 0.001) {
+				audio.volume = targetVolume;
+			}
 
 			if (isPlaying && isInRegion) {
 				enablePitchPreservingPlayback(audio);
@@ -372,7 +385,7 @@ export function useAudioPreviewSync({
 				audio.pause();
 			}
 		}
-	}, [isPlaying, resolvedUserTracks, timelineTime]);
+	}, [isPlaying, previewVolume, resolvedUserTracks, timelineTime, userTrackGainEnvelopes]);
 
 	useEffect(() => {
 		if (resolvedSourceTracks.length === 0) {

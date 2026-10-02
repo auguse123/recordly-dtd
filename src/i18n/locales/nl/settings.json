@@ -262,7 +262,12 @@
 		"systemLabel": "Systeemaudio",
 		"micLabel": "Microfoon",
 		"mixedLabel": "Bron",
-		"deleteRegion": "Audio verwijderen"
+		"deleteRegion": "Audio verwijderen",
+		"fadeIn": "Fade in",
+		"fadeOut": "Fade out",
+		"ducking": "Lower when I speak",
+		"duckingLevel": "Volume while speaking",
+		"duckingHint": "Use this on music: it dips under your voice, in the preview and the export."
 	},
 	"updates": {
 		"experimentalDescription": "Je hebt experimentele updates ingeschakeld, dus je kunt de nieuwste update van Recordly testen voordat die breed beschikbaar is.",

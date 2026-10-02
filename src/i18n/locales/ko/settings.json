@@ -262,7 +262,12 @@
 		"systemLabel": "시스템 소스",
 		"micLabel": "마이크 소스",
 		"mixedLabel": "소스",
-		"deleteRegion": "오디오 삭제"
+		"deleteRegion": "오디오 삭제",
+		"fadeIn": "Fade in",
+		"fadeOut": "Fade out",
+		"ducking": "Lower when I speak",
+		"duckingLevel": "Volume while speaking",
+		"duckingHint": "Use this on music: it dips under your voice, in the preview and the export."
 	},
 	"updates": {
 		"experimentalDescription": "실험적 업데이트를 선택했으므로 Recordly의 최신 업데이트가 널리 제공되기 전에 먼저 테스트해 볼 수 있습니다.",

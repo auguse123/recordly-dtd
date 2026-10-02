@@ -602,6 +602,14 @@ export interface AudioRegion {
 	volume: number;
 	normalize?: boolean;
 	trackIndex?: number;
+	/** Fade from silence at the start of the region, in ms. */
+	fadeInMs?: number;
+	/** Fade to silence at the end of the region, in ms. */
+	fadeOutMs?: number;
+	/** Lower this track while the voice speaks. */
+	ducking?: boolean;
+	/** Volume kept while ducked, as a fraction of `volume`. */
+	duckingLevel?: number;
 }
 
 export interface CaptionCue {
