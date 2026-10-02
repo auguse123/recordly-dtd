@@ -7,7 +7,12 @@ import { type ColorGrade, getColorGradeMatrix, isNeutralColorGrade } from "../co
  * both grade the picture identically.
  */
 export class ColorGradeFilter {
-	readonly filter = new ColorMatrixFilter();
+	/**
+	 * Pixi renders filters at resolution 1 without antialiasing by default,
+	 * which halves the picture on Retina screens. Follow the render target so
+	 * the grade only changes colors, never sharpness.
+	 */
+	readonly filter = new ColorMatrixFilter({ resolution: "inherit", antialias: "inherit" });
 	private neutral = true;
 
 	update(grade: ColorGrade | null | undefined): void {
