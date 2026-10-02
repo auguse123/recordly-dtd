@@ -32,6 +32,8 @@
 		"showCursor": "Afficher le curseur",
 		"loopCursor": "Boucler le curseur",
 		"cursorStyle": "Style du curseur",
+		"systemCursor": "Curseur système",
+		"systemCursorHint": "Votre curseur macOS habituel, tel qu'il a bougé à l'écran : sans lissage, flou, rebond ni effet de clic.",
 		"cursorStyleOptions": {
 			"macos": "macOS",
 			"tahoe": "Tahoe",

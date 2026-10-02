@@ -179,6 +179,8 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		onCursorClickBounceDurationChange: appearance.setCursorClickBounceDuration,
 		cursorSway: appearance.cursorSway,
 		onCursorSwayChange: appearance.setCursorSway,
+		cursorMotionBlur: appearance.cursorMotionBlur,
+		onCursorMotionBlurChange: appearance.setCursorMotionBlur,
 		borderRadius: appearance.borderRadius,
 		onBorderRadiusChange: appearance.setBorderRadius,
 		webcam: appearance.webcam,

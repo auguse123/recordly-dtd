@@ -44,6 +44,7 @@ import { getDefaultBorderRadiusPercent } from "./projectPersistence";
 import { SettingsRow } from "./SettingsRow";
 import { SettingsCategory, SettingsSections } from "./SettingsSections";
 import { SliderControl } from "./SliderControl";
+import { isSystemCursorActive, SYSTEM_CURSOR_SETTINGS } from "./systemCursor";
 import type {
 	AnnotationRegion,
 	AnnotationType,
@@ -515,6 +516,8 @@ interface SettingsPanelProps {
 	onCursorClickBounceDurationChange?: (duration: number) => void;
 	cursorSway?: number;
 	onCursorSwayChange?: (amount: number) => void;
+	cursorMotionBlur?: number;
+	onCursorMotionBlurChange?: (amount: number) => void;
 	borderRadius?: number;
 	onBorderRadiusChange?: (radius: number) => void;
 	webcam?: WebcamOverlaySettings;
@@ -965,6 +968,8 @@ export function SettingsPanel({
 	onCursorClickBounceDurationChange,
 	cursorSway = DEFAULT_CURSOR_SWAY,
 	onCursorSwayChange,
+	cursorMotionBlur = 0,
+	onCursorMotionBlurChange,
 	borderRadius = getDefaultBorderRadiusPercent(),
 	onBorderRadiusChange,
 	webcam,
@@ -1460,6 +1465,31 @@ export function SettingsPanel({
 		onCursorClickBounceChange?.(initialEditorPreferences.cursorClickBounce);
 		onCursorClickBounceDurationChange?.(initialEditorPreferences.cursorClickBounceDuration);
 		onCursorSwayChange?.(initialEditorPreferences.cursorSway);
+		onCursorMotionBlurChange?.(initialEditorPreferences.cursorMotionBlur);
+	};
+
+	const systemCursorActive = isSystemCursorActive({
+		cursorStyle,
+		cursorSize,
+		cursorSmoothing,
+		cursorMotionBlur,
+		cursorClickBounce,
+		cursorSway,
+		cursorClickEffect,
+	});
+
+	const handleSystemCursorChange = (enabled: boolean) => {
+		const next = enabled ? SYSTEM_CURSOR_SETTINGS : initialEditorPreferences;
+		if (enabled) {
+			onShowCursorChange?.(true);
+		}
+		onCursorStyleChange?.(next.cursorStyle);
+		onCursorSizeChange?.(next.cursorSize);
+		onCursorSmoothingChange?.(next.cursorSmoothing);
+		onCursorMotionBlurChange?.(next.cursorMotionBlur);
+		onCursorClickBounceChange?.(next.cursorClickBounce);
+		onCursorSwayChange?.(next.cursorSway);
+		onCursorClickEffectChange?.(next.cursorClickEffect);
 	};
 
 	const activeMotionPresetId = useMemo(() => {
@@ -2849,6 +2879,24 @@ export function SettingsPanel({
 								</div>
 							)}
 						</div>
+						<label className="flex items-start justify-between gap-3 rounded-lg border border-foreground/10 bg-foreground/[0.03] px-3 py-2.5">
+							<span className="flex flex-col gap-1">
+								<span className="text-xs font-medium text-foreground">
+									{tSettings("effects.systemCursor", "System cursor")}
+								</span>
+								<span className="text-[11px] leading-snug text-muted-foreground">
+									{tSettings(
+										"effects.systemCursorHint",
+										"Your normal macOS pointer as it moved on screen: no smoothing, blur, bounce or click effect.",
+									)}
+								</span>
+							</span>
+							<Switch
+								aria-label={tSettings("effects.systemCursor", "System cursor")}
+								checked={systemCursorActive}
+								onCheckedChange={handleSystemCursorChange}
+							/>
+						</label>
 						<div className="flex flex-col gap-3">
 							<div className="space-y-1.5">
 								<ChoiceGroup

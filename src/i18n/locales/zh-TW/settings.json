@@ -32,6 +32,8 @@
 		"showCursor": "顯示游標",
 		"loopCursor": "游標循環",
 		"cursorStyle": "游標樣式",
+		"systemCursor": "System cursor",
+		"systemCursorHint": "Your normal macOS pointer as it moved on screen: no smoothing, blur, bounce or click effect.",
 		"cursorStyleOptions": {
 			"macos": "macOS",
 			"tahoe": "Tahoe",
