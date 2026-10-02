@@ -249,6 +249,8 @@ export interface ClipRegion {
 	speed: number;
 	muted?: boolean;
 	showSourceAudio?: boolean;
+	/** Volume of a detached audio clip (0–2, 1 when unset). */
+	volume?: number;
 	/** Transition into the next clip (or out to black on the last clip). */
 	transitionOut?: ClipTransition;
 }

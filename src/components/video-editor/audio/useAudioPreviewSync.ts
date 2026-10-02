@@ -32,6 +32,11 @@ interface UseAudioPreviewSyncParams {
 	sourceAudioFallbackStartDelayMsByPath: Record<string, number>;
 	sourceAudioResourceVersion: number;
 	isCurrentClipMuted: boolean;
+	/**
+	 * The recording itself, played as a separate source track while the
+	 * audio is detached from the video (the video element is then muted).
+	 */
+	embeddedSourceAudioPath?: string | null;
 	/** Fade of the recording's sound around clip transitions, 0–1. */
 	sourceTransitionGain?: number;
 	/** Fades and ducking of the audio regions (timeline ms), by region id. */
@@ -52,6 +57,7 @@ export function useAudioPreviewSync({
 	sourceAudioFallbackStartDelayMsByPath,
 	sourceAudioResourceVersion,
 	isCurrentClipMuted,
+	embeddedSourceAudioPath = null,
 	sourceTransitionGain = 1,
 	userTrackGainEnvelopes,
 	getSourceTrackPreviewGain,
@@ -73,10 +79,22 @@ export function useAudioPreviewSync({
 		() => resolvedPlan.tracks.filter((track) => track.kind === "user"),
 		[resolvedPlan],
 	);
-	const resolvedSourceTracks = useMemo(
-		() => resolvedPlan.tracks.filter((track) => track.kind !== "user"),
-		[resolvedPlan],
-	);
+	const resolvedSourceTracks = useMemo(() => {
+		const tracks = resolvedPlan.tracks.filter((track) => track.kind !== "user");
+		if (
+			embeddedSourceAudioPath &&
+			!tracks.some((track) => track.sourceRef.path === embeddedSourceAudioPath)
+		) {
+			tracks.unshift({
+				id: `embedded:${embeddedSourceAudioPath}`,
+				kind: "embedded",
+				sourceRef: { path: embeddedSourceAudioPath, startDelayMs: 0 },
+				gain: 1,
+				timelineBinding: { startMs: 0, endMs: Number.POSITIVE_INFINITY },
+			});
+		}
+		return tracks;
+	}, [embeddedSourceAudioPath, resolvedPlan]);
 
 	const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 	const audioElementRevokersRef = useRef<Map<string, () => void>>(new Map());

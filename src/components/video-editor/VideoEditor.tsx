@@ -367,6 +367,7 @@ export default function VideoEditor() {
 		zoomCommands,
 		clipCommands,
 		audioCommands,
+		audioClipCommands: editing.audioClipCommands,
 		captionCommands,
 		annotationCommands,
 		autoCaptionController,

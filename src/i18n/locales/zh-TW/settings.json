@@ -30,7 +30,10 @@
 		"transitionDip": "Dip to black",
 		"transitionCrossfade": "Cross dissolve",
 		"transitionDuration": "Duration",
-		"transitionHint": "Plays at the end of this clip, with a short audio fade. On the last clip, the video fades out to black."
+		"transitionHint": "Plays at the end of this clip, with a short audio fade. On the last clip, the video fades out to black.",
+		"detachAudio": "Detach audio",
+		"reattachAudio": "Relink audio to video",
+		"detachedHint": "Audio is detached: move or trim audio clips on their own row to make J/L cuts. ⌘B cuts the selected audio clip."
 	},
 	"effects": {
 		"title": "影片效果",
@@ -346,5 +349,11 @@
 		"includeCamera": "Apply to the camera too",
 		"reset": "Reset",
 		"hint": "The grade applies to the whole recording, in the preview and the export."
+	},
+	"audioClip": {
+		"title": "Audio clip",
+		"volume": "Volume",
+		"mute": "Mute audio clip",
+		"delete": "Delete audio clip"
 	}
 }

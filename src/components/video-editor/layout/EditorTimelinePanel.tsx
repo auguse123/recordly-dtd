@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import type { useVideoEditorAudio } from "../audio/useVideoEditorAudio";
 import { retimeCaptionFragment } from "../captionTimeline";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
+import type { useAudioClipCommands } from "../hooks/useAudioClipCommands";
 import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
 import type { useCaptionCommands } from "../hooks/useCaptionCommands";
 import type { useClipRegionCommands } from "../hooks/useClipRegionCommands";
@@ -24,6 +25,10 @@ type Props = {
 	zoomCommands: ReturnType<typeof useZoomRegionCommands>;
 	clipCommands: ReturnType<typeof useClipRegionCommands>;
 	editTools: ReturnType<typeof useEditingShortcuts>;
+	audioClipCommands: ReturnType<typeof useAudioClipCommands>;
+	/** Splits the selected audio clip, or the video when none is selected. */
+	onTimelineSplit: (splitMs: number) => void;
+	onDeleteWithoutSelection: () => boolean;
 	audioCommands: ReturnType<typeof useAudioRegionCommands>;
 	captionCommands: ReturnType<typeof useCaptionCommands>;
 	annotationCommands: ReturnType<typeof useAnnotationRegionCommands>;
@@ -49,6 +54,9 @@ export function EditorTimelinePanel(props: Props) {
 		zoomCommands,
 		clipCommands,
 		editTools,
+		audioClipCommands,
+		onTimelineSplit,
+		onDeleteWithoutSelection,
 		audioCommands,
 		captionCommands,
 		annotationCommands,
@@ -101,9 +109,9 @@ export function EditorTimelinePanel(props: Props) {
 						onSelectZoom={zoomCommands.handleSelectZoom}
 						trimRegions={timeline.trimRegions}
 						clipRegions={timeline.clipRegions}
-						onClipSplit={clipCommands.handleClipSplit}
+						onClipSplit={onTimelineSplit}
 						marks={editTools.marks}
-						onDeleteWithoutSelection={editTools.deleteMarkedRange}
+						onDeleteWithoutSelection={onDeleteWithoutSelection}
 						onClipDelete={clipCommands.handleClipDelete}
 						onClipSpanChange={clipCommands.handleClipSpanChange}
 						selectedClipId={timeline.selectedClipId}
@@ -159,6 +167,12 @@ export function EditorTimelinePanel(props: Props) {
 						onAnnotationDelete={annotationCommands.handleAnnotationDelete}
 						selectedAnnotationId={timeline.selectedAnnotationId}
 						onSelectAnnotation={handleSelectAnnotation}
+						audioClipRegions={timeline.audioClipRegions}
+						onAudioClipSpanChange={(id, span) =>
+							audioClipCommands.handleAudioClipSpanChange(id, span.start, span.end)
+						}
+						selectedAudioClipId={timeline.selectedAudioClipId}
+						onSelectAudioClip={audioClipCommands.handleSelectAudioClip}
 						showSourceAudioTrack={timeline.clipRegions.some(
 							(clip) => clip.showSourceAudio,
 						)}

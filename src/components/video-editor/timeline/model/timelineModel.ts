@@ -1,3 +1,4 @@
+import { getAudioClipVolume } from "../../audio/detachedAudio";
 import { formatClipSpeedLabel } from "../../clipSpeedChange";
 import type {
 	AnnotationRegion,
@@ -7,7 +8,7 @@ import type {
 	ZoomRegion,
 } from "../../types";
 import { getClipSourceEndMs, getClipSourceStartMs } from "../../types";
-import { CAPTION_ROW_ID, CLIP_ROW_ID, ZOOM_ROW_ID } from "../core/constants";
+import { CAPTION_ROW_ID, CLIP_ROW_ID, DETACHED_AUDIO_ROW_ID, ZOOM_ROW_ID } from "../core/constants";
 import {
 	getAnnotationTrackIndex,
 	getAnnotationTrackRowId,
@@ -49,6 +50,7 @@ export function buildTimelineItems(params: {
 	annotationRegions: AnnotationRegion[];
 	audioRegions: AudioRegion[];
 	captionCues?: CaptionCue[];
+	audioClipRegions?: ClipRegion[] | null;
 }): TimelineRenderItem[] {
 	const { zoomRegions, clipRegions, annotationRegions, audioRegions, captionCues = [] } = params;
 	const zooms: TimelineRenderItem[] = zoomRegions.map((region, index) => ({
@@ -107,7 +109,20 @@ export function buildTimelineItems(params: {
 		variant: "caption",
 	}));
 
-	return [...zooms, ...clips, ...annotations, ...audios, ...captions];
+	const audioClips: TimelineRenderItem[] = (params.audioClipRegions ?? []).map(
+		(region, index) => ({
+			id: region.id,
+			rowId: DETACHED_AUDIO_ROW_ID,
+			span: { start: region.startMs, end: region.endMs },
+			sourceSpan: { start: getClipSourceStartMs(region), end: getClipSourceEndMs(region) },
+			label: `Audio ${index + 1}`,
+			audioGain: getAudioClipVolume(region),
+			muted: Boolean(region.muted),
+			variant: "audio",
+		}),
+	);
+
+	return [...zooms, ...clips, ...annotations, ...audios, ...captions, ...audioClips];
 }
 
 export function buildAllRegionSpans(params: {
@@ -116,6 +131,7 @@ export function buildAllRegionSpans(params: {
 	zoomRegions: ZoomRegion[];
 	clipRegions: ClipRegion[];
 	audioRegions: AudioRegion[];
+	audioClipRegions?: ClipRegion[] | null;
 }): TimelineRegionSpan[] {
 	const { zoomRegions, clipRegions, audioRegions } = params;
 	const zooms = zoomRegions.map((r) => ({
@@ -151,6 +167,12 @@ export function buildAllRegionSpans(params: {
 			start: r.startMs,
 			end: r.endMs,
 			rowId: CAPTION_ROW_ID,
+		})),
+		...(params.audioClipRegions ?? []).map((r) => ({
+			id: r.id,
+			start: r.startMs,
+			end: r.endMs,
+			rowId: DETACHED_AUDIO_ROW_ID,
 		})),
 	];
 }

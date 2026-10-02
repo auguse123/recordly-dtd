@@ -62,6 +62,16 @@ function toOutputSegments(slices: readonly TimelineSlice[]): SourceToOutputSegme
 export class OfflineAudioProcessor extends AudioMediaProcessor {
 	/** Render sidecar tracks only, leaving out the audio muxed into the video. */
 	protected skipEmbeddedSourceAudio = false;
+	/**
+	 * Audio clips laid independently of the video clips (detached audio). When
+	 * set, source audio follows these clips while the output keeps the video
+	 * timeline's length.
+	 */
+	protected detachedAudioClips: ClipRegion[] | null = null;
+
+	setDetachedAudioClips(clips: ClipRegion[] | null | undefined): void {
+		this.detachedAudioClips = clips ?? null;
+	}
 
 	protected async renderAndMuxOfflineAudio(
 		videoUrl: string,
@@ -188,13 +198,18 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 		}
 		const sourceDurationMs = sourceDurationSec * 1000;
 
+		// Detached audio only applies on the clip timeline.
+		const audioClips = clipRegions ? (this.detachedAudioClips ?? clipRegions) : undefined;
+		const detached = Boolean(clipRegions && this.detachedAudioClips);
+
 		// Build timeline slices (non-trimmed segments with speed info)
-		const slices = clipRegions
-			? clipRegions.map((clip) => ({
+		const slices: TimelineSlice[] = audioClips
+			? audioClips.map((clip) => ({
 					sourceStartMs: getClipSourceStartMs(clip),
 					sourceEndMs: getClipSourceEndMs(clip),
 					speed: clip.speed,
 					outputStartMs: clip.startMs,
+					...(detached && typeof clip.volume === "number" ? { gain: clip.volume } : {}),
 				}))
 			: this.buildTimelineSlices(sourceDurationMs, trimRegions, speedRegions);
 
@@ -224,7 +239,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 							companionEntries[0] ??
 							null,
 						videoUrl,
-						clipRegions ? getClipOutputSegments(clipRegions) : toOutputSegments(slices),
+						audioClips ? getClipOutputSegments(audioClips) : toOutputSegments(slices),
 					)
 				: [];
 			for (const entry of regionEntries) {
@@ -241,7 +256,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 		}
 
 		const numChannels = Math.min(primaryBuffer?.numberOfChannels ?? 2, 2);
-		const mutedSourceOutputRangesSec = (clipRegions ?? [])
+		const mutedSourceOutputRangesSec = (audioClips ?? [])
 			.filter(
 				(clip) =>
 					Boolean(clip.muted) &&
@@ -260,9 +275,10 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			companionEntries,
 			regionEntries,
 			mutedSourceOutputRangesSec,
-			sourceGainEnvelope: clipRegions
-				? getTransitionGainEnvelope(resolveClipTransitions(clipRegions))
-				: [],
+			sourceGainEnvelope:
+				clipRegions && !detached
+					? getTransitionGainEnvelope(resolveClipTransitions(clipRegions))
+					: [],
 			slices,
 			outputDurationMs,
 			numChannels,

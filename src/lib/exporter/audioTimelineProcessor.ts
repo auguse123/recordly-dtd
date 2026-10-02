@@ -182,7 +182,7 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
 				}
 				const source = ctx.createBufferSource();
 				const gainNode = ctx.createGain();
-				const baseGain = Math.max(0, Math.min(2, gain));
+				const baseGain = Math.max(0, Math.min(4, gain * (slice.gain ?? 1)));
 				gainNode.gain.value = baseGain;
 
 				const sourceOffsetSec =

@@ -83,6 +83,11 @@ export interface TimelineEditorProps {
 	captionQuickAddEnabled?: boolean;
 	selectedCaptionId?: string | null;
 	onSelectCaption?: (id: string | null) => void;
+	/** Audio clips cut apart from the video, or null while the sound follows it. */
+	audioClipRegions?: ClipRegion[] | null;
+	onAudioClipSpanChange?: (id: string, span: Span) => void;
+	selectedAudioClipId?: string | null;
+	onSelectAudioClip?: (id: string | null) => void;
 	videoPath?: string | null;
 	videoSourcePath?: string | null;
 	cursorTelemetrySourcePath?: string | null;
@@ -168,6 +173,10 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			captionQuickAddEnabled = true,
 			selectedCaptionId,
 			onSelectCaption,
+			audioClipRegions = null,
+			onAudioClipSpanChange,
+			selectedAudioClipId = null,
+			onSelectAudioClip,
 			videoPath,
 			videoSourcePath,
 			cursorTelemetrySourcePath,
@@ -409,6 +418,8 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 			onCaptionAdded,
 			selectedCaptionId,
 			onSelectCaption,
+			audioClipRegions,
+			onAudioClipSpanChange,
 			isMac,
 			keyShortcuts,
 			isTimelineFocusedRef,
@@ -520,11 +531,17 @@ const TimelineEditor = forwardRef<TimelineEditorHandle, TimelineEditorProps>(
 							selectedAudioId={selectedAudioId}
 							selectedCaptionId={selectedCaptionId}
 							selectAllBlocksActive={selectAllBlocksActive}
-							onClearBlockSelection={clearSelectedBlocks}
+							onClearBlockSelection={() => {
+								clearSelectedBlocks();
+								onSelectAudioClip?.(null);
+							}}
 							keyframes={keyframes}
 							sourceAudioTracks={sourceAudioTracks}
 							getSourceAudioTrackSettingsForClip={getSourceAudioTrackSettingsForClip}
 							showSourceAudioTrack={showSourceAudioTrack}
+							isAudioDetached={audioClipRegions !== null}
+							selectedAudioClipId={selectedAudioClipId}
+							onSelectAudioClip={onSelectAudioClip}
 							liveSpanPreviewById={liveZoomPreview.previewSpans}
 							liveHiddenItemIds={Array.from(liveZoomPreview.hiddenZoomIds)}
 							isDragging={isDragging}

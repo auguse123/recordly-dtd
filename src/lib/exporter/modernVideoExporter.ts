@@ -148,6 +148,8 @@ interface VideoExporterConfig extends ExportConfig {
 	zoomClassicMode?: boolean;
 	audioRegions?: AudioRegion[];
 	clipRegions?: ClipRegion[];
+	/** Audio clips laid apart from the video clips (detached audio), or null. */
+	audioClipRegions?: ClipRegion[] | null;
 	sourceAudioFallbackPaths?: string[];
 	sourceAudioFallbackStartDelayMsByPath?: Record<string, number>;
 	sourceAudioTrackSettings?: SourceAudioTrackSettings;
@@ -379,6 +381,14 @@ export class ModernVideoExporter {
 		this.config = config;
 	}
 
+	/** Audio must follow the clip timeline (edited clips or detached audio clips). */
+	private requiresTimelineAudio(): boolean {
+		return (
+			requiresClipTimelineRendering(this.config.clipRegions) ||
+			(this.config.clipRegions !== undefined && Boolean(this.config.audioClipRegions))
+		);
+	}
+
 	async export(): Promise<ExportResult> {
 		let useFallbackMediaSource = false;
 		let retriedWithFallbackMediaSource = false;
@@ -548,7 +558,7 @@ export class ModernVideoExporter {
 					!useNativeEncoder &&
 					nativeAudioPlan.audioMode !== "none" &&
 					// The PCM/FFmpeg path preserves AAC priming; WebCodecs AAC can shift clip cuts.
-					(requiresClipTimelineRendering(this.config.clipRegions) ||
+					(this.requiresTimelineAudio() ||
 						shouldUsePitchPreservingFfmpegAudio ||
 						!(await isAacAudioEncodingSupported()));
 				const effectiveDuration = this.streamingDecoder.getEffectiveDuration(
@@ -825,6 +835,7 @@ export class ModernVideoExporter {
 						(this.config.sourceAudioFallbackPaths ?? []).length > 0
 					) {
 						this.audioProcessor = new AudioProcessor();
+						this.audioProcessor.setDetachedAudioClips(this.config.audioClipRegions);
 						this.audioProcessor.setOnProgress((progress) => {
 							this.reportFinalizingProgress(totalFrames, 99, progress);
 						});
@@ -1485,7 +1496,7 @@ export class ModernVideoExporter {
 		}
 
 		if (
-			requiresClipTimelineRendering(this.config.clipRegions) ||
+			this.requiresTimelineAudio() ||
 			speedRegions.length > 0 ||
 			audioRegions.length > 0 ||
 			sourceAudioFallbackPaths.length > 1 ||
@@ -1512,7 +1523,7 @@ export class ModernVideoExporter {
 				Number.isFinite(primaryAudioSourceSampleRate) &&
 				primaryAudioSourceSampleRate > 0;
 			const requiresRenderedEditedTrack =
-				requiresClipTimelineRendering(this.config.clipRegions) ||
+				this.requiresTimelineAudio() ||
 				hasNonDefaultSourceTrackSettings(this.config.sourceAudioTrackSettings) ||
 				(this.config.clipRegions ?? []).some((clip) => Boolean(clip.muted));
 			const strategy =
@@ -2137,6 +2148,7 @@ export class ModernVideoExporter {
 		sourceAudioFallbackPaths = this.config.sourceAudioFallbackPaths,
 	) {
 		this.audioProcessor = new AudioProcessor();
+		this.audioProcessor.setDetachedAudioClips(this.config.audioClipRegions);
 		this.audioProcessor.setOnProgress(onProgress);
 		const audioBlob = await this.measureFinalizationStage("editedAudioRenderMs", async () =>
 			this.awaitWithFinalizationTimeout(

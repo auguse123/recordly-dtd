@@ -10,3 +10,5 @@ export const AUDIO_ROW_PREFIX = `${AUDIO_ROW_ID}-`;
 export const FALLBACK_RANGE_MS = 1000;
 export const TARGET_MARKER_COUNT = 12;
 export const WAVEFORM_DEFAULT_PEAK_COUNT = 2048;
+/** Audio clips cut apart from the video (detached sound). */
+export const DETACHED_AUDIO_ROW_ID = "row-detached-audio";

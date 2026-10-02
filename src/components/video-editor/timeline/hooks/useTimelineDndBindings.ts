@@ -27,6 +27,8 @@ interface UseTimelineDndBindingsParams {
 	speedRegions: SpeedRegion[];
 	audioRegions: AudioRegion[];
 	captionCues: CaptionCue[];
+	/** Audio clips cut apart from the video, or null while the sound follows it. */
+	audioClipRegions?: ClipRegion[] | null;
 	onZoomSpanChange: (id: string, span: Span) => void;
 	onTrimSpanChange?: (id: string, span: Span) => void;
 	onClipSpanChange?: (id: string, span: ClipSequenceSpan) => void;
@@ -34,6 +36,7 @@ interface UseTimelineDndBindingsParams {
 	onSpeedSpanChange?: (id: string, span: Span) => void;
 	onAudioSpanChange?: (id: string, span: Span, trackIndex?: number) => void;
 	onCaptionSpanChange?: (id: string, span: Span) => void;
+	onAudioClipSpanChange?: (id: string, span: Span) => void;
 }
 
 type TimelineItemKind =
@@ -44,6 +47,7 @@ type TimelineItemKind =
 	| "speed"
 	| "audio"
 	| "caption"
+	| "audioClip"
 	| null;
 
 export function useTimelineDndBindings({
@@ -54,6 +58,7 @@ export function useTimelineDndBindings({
 	speedRegions,
 	audioRegions,
 	captionCues,
+	audioClipRegions = null,
 	onZoomSpanChange,
 	onTrimSpanChange,
 	onClipSpanChange,
@@ -61,6 +66,7 @@ export function useTimelineDndBindings({
 	onSpeedSpanChange,
 	onAudioSpanChange,
 	onCaptionSpanChange,
+	onAudioClipSpanChange,
 }: UseTimelineDndBindingsParams) {
 	const resolveItemKind = useCallback(
 		(id: string): TimelineItemKind => {
@@ -71,9 +77,11 @@ export function useTimelineDndBindings({
 			if (speedRegions.some((r) => r.id === id)) return "speed";
 			if (audioRegions.some((r) => r.id === id)) return "audio";
 			if (captionCues.some((c) => c.id === id)) return "caption";
+			if (audioClipRegions?.some((c) => c.id === id)) return "audioClip";
 			return null;
 		},
 		[
+			audioClipRegions,
 			zoomRegions,
 			trimRegions,
 			clipRegions,
@@ -118,6 +126,7 @@ export function useTimelineDndBindings({
 			// Captions share a single lane and must never overlap, so validate a dragged or
 			// resized caption against the other cues just like the other timeline items.
 			if (itemKind === "caption") return checkOverlap(captionCues);
+			if (itemKind === "audioClip") return checkOverlap(audioClipRegions ?? []);
 
 			if (itemKind === "audio") {
 				const activeTrackIndex = resolveTrackIndex("audio", excludeId, rowId);
@@ -137,6 +146,7 @@ export function useTimelineDndBindings({
 			audioRegions,
 			speedRegions,
 			captionCues,
+			audioClipRegions,
 		],
 	);
 
@@ -148,8 +158,9 @@ export function useTimelineDndBindings({
 				annotationRegions,
 				audioRegions,
 				captionCues,
+				audioClipRegions,
 			}),
-		[zoomRegions, clipRegions, annotationRegions, audioRegions, captionCues],
+		[zoomRegions, clipRegions, annotationRegions, audioRegions, captionCues, audioClipRegions],
 	);
 
 	const allRegionSpans = useMemo(
@@ -160,8 +171,9 @@ export function useTimelineDndBindings({
 				audioRegions,
 				annotationRegions,
 				captionCues,
+				audioClipRegions,
 			}),
-		[zoomRegions, clipRegions, audioRegions, annotationRegions, captionCues],
+		[zoomRegions, clipRegions, audioRegions, annotationRegions, captionCues, audioClipRegions],
 	);
 
 	const getResolvedDropRowId = useCallback(
@@ -188,6 +200,8 @@ export function useTimelineDndBindings({
 				onAudioSpanChange?.(id, span, nextTrackIndex);
 			} else if (itemKind === "caption") {
 				onCaptionSpanChange?.(id, span);
+			} else if (itemKind === "audioClip") {
+				onAudioClipSpanChange?.(id, span);
 			}
 		},
 		[
@@ -200,6 +214,7 @@ export function useTimelineDndBindings({
 			onSpeedSpanChange,
 			onAudioSpanChange,
 			onCaptionSpanChange,
+			onAudioClipSpanChange,
 		],
 	);
 

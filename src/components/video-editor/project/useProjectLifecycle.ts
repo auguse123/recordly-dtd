@@ -173,6 +173,8 @@ export function useProjectLifecycle(input: Input) {
 		timeline.setZoomRegions(editor.zoomRegions);
 		timeline.setTrimRegions(editor.trimRegions);
 		timeline.setClipRegions(editor.clipRegions);
+		timeline.setAudioClipRegions(editor.audioClipRegions ?? null);
+		timeline.setSelectedAudioClipId(null);
 		// An explicit empty clip list means the user deleted all footage, not a legacy project.
 		refs.clipInitializedRef.current = Array.isArray(persistedEditor.clipRegions);
 		refs.autoFullTrackClipIdRef.current = null;
@@ -337,6 +339,8 @@ export function useProjectLifecycle(input: Input) {
 		timeline.setZoomRegions([]);
 		timeline.setTrimRegions([]);
 		timeline.setClipRegions([]);
+		timeline.setAudioClipRegions(null);
+		timeline.setSelectedAudioClipId(null);
 		refs.clipInitializedRef.current = false;
 		refs.autoFullTrackClipIdRef.current = null;
 		refs.autoFullTrackClipEndMsRef.current = null;

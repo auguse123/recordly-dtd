@@ -67,6 +67,8 @@ interface UseTimelineEditorRuntimeParams {
 	onCaptionAdded?: (span: Span) => void;
 	selectedCaptionId?: string | null;
 	onSelectCaption?: (id: string | null) => void;
+	audioClipRegions?: ClipRegion[] | null;
+	onAudioClipSpanChange?: (id: string, span: Span) => void;
 	isMac: boolean;
 	keyShortcuts: TimelineShortcutBindings;
 	isTimelineFocusedRef: RefObject<boolean | null>;
@@ -118,6 +120,8 @@ export function useTimelineEditorRuntime({
 	onCaptionAdded,
 	selectedCaptionId,
 	onSelectCaption,
+	audioClipRegions = null,
+	onAudioClipSpanChange,
 	isMac,
 	keyShortcuts,
 	isTimelineFocusedRef,
@@ -197,6 +201,7 @@ export function useTimelineEditorRuntime({
 		speedRegions,
 		audioRegions,
 		captionCues,
+		audioClipRegions,
 		onZoomSpanChange,
 		onTrimSpanChange,
 		onClipSpanChange,
@@ -204,6 +209,7 @@ export function useTimelineEditorRuntime({
 		onSpeedSpanChange,
 		onAudioSpanChange,
 		onCaptionSpanChange,
+		onAudioClipSpanChange,
 	});
 
 	const {

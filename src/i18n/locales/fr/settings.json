@@ -30,7 +30,10 @@
 		"transitionDip": "Fondu au noir",
 		"transitionCrossfade": "Fondu enchaîné",
 		"transitionDuration": "Durée",
-		"transitionHint": "S'applique à la fin de ce clip, avec un court fondu audio. Sur le dernier clip, la vidéo se termine en fondu au noir."
+		"transitionHint": "S'applique à la fin de ce clip, avec un court fondu audio. Sur le dernier clip, la vidéo se termine en fondu au noir.",
+		"detachAudio": "Détacher le son",
+		"reattachAudio": "Rattacher le son à la vidéo",
+		"detachedHint": "Son détaché : déplacez ou rognez les clips son sur leur propre ligne pour faire des coupes J/L. ⌘B coupe le clip son sélectionné."
 	},
 	"effects": {
 		"title": "Effets vidéo",
@@ -346,5 +349,11 @@
 		"includeCamera": "Appliquer aussi à la caméra",
 		"reset": "Réinitialiser",
 		"hint": "L'étalonnage s'applique à tout l'enregistrement, dans l'aperçu et l'export."
+	},
+	"audioClip": {
+		"title": "Clip son",
+		"volume": "Volume",
+		"mute": "Couper le clip son",
+		"delete": "Supprimer le clip son"
 	}
 }

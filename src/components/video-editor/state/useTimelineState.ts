@@ -21,6 +21,9 @@ export function useTimelineState() {
 	const [trimRegions, setTrimRegions] = useState<TrimRegion[]>([]);
 	const [clipRegions, setClipRegions] = useState<ClipRegion[]>([]);
 	const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+	/** Audio clips laid independently of the video clips; null while audio follows the video. */
+	const [audioClipRegions, setAudioClipRegions] = useState<ClipRegion[] | null>(null);
+	const [selectedAudioClipId, setSelectedAudioClipId] = useState<string | null>(null);
 	const [speedRegions, setSpeedRegions] = useState<SpeedRegion[]>([]);
 	const [annotationRegions, setAnnotationRegions] = useState<AnnotationRegion[]>([]);
 	const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
@@ -54,6 +57,10 @@ export function useTimelineState() {
 		setClipRegions,
 		selectedClipId,
 		setSelectedClipId,
+		audioClipRegions,
+		setAudioClipRegions,
+		selectedAudioClipId,
+		setSelectedAudioClipId,
 		speedRegions,
 		setSpeedRegions,
 		annotationRegions,

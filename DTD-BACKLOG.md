@@ -16,7 +16,7 @@ Demandes d'Augustin (2026-10-01), à faire petit à petit.
 | 13 | Transitions entre clips (fondu enchaîné, fondu au noir) + fondus audio | fait |
 | 14 | Étalonnage simple (luminosité, contraste, saturation, température, préréglages) | fait |
 | 15 | Musique + ducking (la musique baisse quand on parle) | fait |
-| 16 | Audio totalement détaché de la vidéo dans la timeline (couper/décaler le son indépendamment, J/L cuts) | à faire (le plus lourd) |
+| 16 | Audio totalement détaché de la vidéo dans la timeline (couper/décaler le son indépendamment, J/L cuts) | fait |
 | 9 | Lien de partage hébergé (desk-to-desk.com) avec suivi des vues | plus tard |
 | — | Versions personnalisées par prospect (« Bonjour Marie… ») | idée, à valider |
 | — | Vidéo de sélection de bureaux générée depuis une URL | idée, à valider |

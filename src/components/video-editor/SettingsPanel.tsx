@@ -30,6 +30,7 @@ import { useI18n, useScopedT } from "../../contexts/I18nContext";
 import type { AppLocale } from "../../i18n/config";
 import { SUPPORTED_LOCALES } from "../../i18n/config";
 import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
+import { MAX_AUDIO_CLIP_VOLUME } from "./audio/detachedAudio";
 import {
 	type AudioRegionMix,
 	DEFAULT_DUCKING_LEVEL,
@@ -464,6 +465,15 @@ interface SettingsPanelProps {
 	selectedClipTransition?: ClipTransition | null;
 	onClipTransitionChange?: (transition: ClipTransition | undefined) => void;
 	onClipDelete?: (id: string) => void;
+	/** The sound lives on its own audio clips instead of following the video. */
+	isAudioDetached?: boolean;
+	onDetachAudio?: () => void;
+	onReattachAudio?: () => void;
+	selectedAudioClipId?: string | null;
+	selectedAudioClip?: { volume: number; muted: boolean } | null;
+	onAudioClipVolumeChange?: (volume: number) => void;
+	onAudioClipMutedChange?: (muted: boolean) => void;
+	onAudioClipDelete?: (id: string) => void;
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
 	selectedAudioNormalize?: boolean | null;
@@ -934,6 +944,14 @@ export function SettingsPanel({
 	selectedClipTransition,
 	onClipTransitionChange,
 	onClipDelete,
+	isAudioDetached = false,
+	onDetachAudio,
+	onReattachAudio,
+	selectedAudioClipId = null,
+	selectedAudioClip = null,
+	onAudioClipVolumeChange,
+	onAudioClipMutedChange,
+	onAudioClipDelete,
 	selectedAudioId,
 	selectedAudioVolume,
 	selectedAudioNormalize,
@@ -2813,7 +2831,53 @@ export function SettingsPanel({
 			</section>
 		);
 
-		const clipSectionContent = (
+		const audioLinkButton = (
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				className="h-9 w-full text-xs"
+				onClick={() => (isAudioDetached ? onReattachAudio?.() : onDetachAudio?.())}
+			>
+				{isAudioDetached
+					? tSettings("clip.reattachAudio", "Relink audio to video")
+					: tSettings("clip.detachAudio", "Detach audio")}
+			</Button>
+		);
+
+		const audioClipSectionContent = selectedAudioClip && (
+			<section className="flex flex-col gap-3">
+				<SectionLabel>{tSettings("audioClip.title", "Audio clip")}</SectionLabel>
+				<SliderControl
+					label={tSettings("audioClip.volume", "Volume")}
+					value={selectedAudioClip.volume}
+					min={0}
+					max={MAX_AUDIO_CLIP_VOLUME}
+					step={0.05}
+					onChange={(volume) => onAudioClipVolumeChange?.(volume)}
+					formatValue={(value) => `${Math.round(value * 100)}%`}
+				/>
+				<label className="flex items-center justify-between py-2">
+					<span className="text-xs text-muted-foreground">
+						{tSettings("audioClip.mute", "Mute audio clip")}
+					</span>
+					<Switch
+						checked={selectedAudioClip.muted}
+						onCheckedChange={(muted) => onAudioClipMutedChange?.(muted)}
+						aria-label={tSettings("audioClip.mute", "Mute audio clip")}
+					/>
+				</label>
+				<p className="text-xs text-muted-foreground/70">
+					{tSettings(
+						"clip.detachedHint",
+						"Audio is detached: move or trim audio clips on their own row to make J/L cuts. ⌘B cuts the selected audio clip.",
+					)}
+				</p>
+				{audioLinkButton}
+			</section>
+		);
+
+		const clipSectionContent = audioClipSectionContent || (
 			<section className="flex flex-col gap-3">
 				<SliderControl
 					label={tSettings("speed.label", "Speed")}
@@ -2838,16 +2902,26 @@ export function SettingsPanel({
 							)}
 						</p>
 					)}
-				<label className="flex items-center justify-between py-2">
-					<span className="text-xs text-muted-foreground">
-						{tSettings("clip.mute", "Mute clip")}
-					</span>
-					<Switch
-						checked={selectedClipMuted ?? false}
-						onCheckedChange={(muted) => onClipMutedChange?.(muted)}
-						aria-label={tSettings("clip.mute", "Mute clip")}
-					/>
-				</label>
+				{isAudioDetached ? (
+					<p className="text-xs text-muted-foreground/70">
+						{tSettings(
+							"clip.detachedHint",
+							"Audio is detached: move or trim audio clips on their own row to make J/L cuts. ⌘B cuts the selected audio clip.",
+						)}
+					</p>
+				) : (
+					<label className="flex items-center justify-between py-2">
+						<span className="text-xs text-muted-foreground">
+							{tSettings("clip.mute", "Mute clip")}
+						</span>
+						<Switch
+							checked={selectedClipMuted ?? false}
+							onCheckedChange={(muted) => onClipMutedChange?.(muted)}
+							aria-label={tSettings("clip.mute", "Mute clip")}
+						/>
+					</label>
+				)}
+				{audioLinkButton}
 				<SectionLabel>{tSettings("clip.transition", "Transition out")}</SectionLabel>
 				<ChoiceGroup
 					aria-label={tSettings("clip.transition", "Transition out")}
@@ -3506,7 +3580,11 @@ export function SettingsPanel({
 				className={cn(
 					"shrink-0 px-5 py-4",
 					(() => {
-						if (activeEffectSection === "clip" && selectedClipId) return false;
+						if (
+							activeEffectSection === "clip" &&
+							(selectedClipId || selectedAudioClipId)
+						)
+							return false;
 						if (activeEffectSection === "zoom" && selectedZoomId) return false;
 						if (activeEffectSection === "audio" && selectedAudioId) return false;
 						if (selectedAnnotationId) return false; // Annotation editor handles its own but let's see
@@ -3514,6 +3592,17 @@ export function SettingsPanel({
 					})() && "hidden",
 				)}
 			>
+				{activeEffectSection === "clip" && selectedAudioClipId && !selectedClipId && (
+					<Button
+						onClick={() => onAudioClipDelete?.(selectedAudioClipId)}
+						variant="destructive-soft"
+						size="sm"
+						className="h-9 w-full gap-2 text-xs"
+					>
+						<Trash2 className="h-3 w-3" />
+						{tSettings("audioClip.delete", "Delete audio clip")}
+					</Button>
+				)}
 				{activeEffectSection === "clip" && selectedClipId && (
 					<Button
 						onClick={() => {

@@ -10,6 +10,8 @@ import type {
 export type EditorHistorySnapshot = {
 	zoomRegions: ZoomRegion[];
 	clipRegions: ClipRegion[];
+	/** Detached audio clips; null/absent while audio follows the video. */
+	audioClipRegions?: ClipRegion[] | null;
 	speedRegions: SpeedRegion[];
 	annotationRegions: AnnotationRegion[];
 	audioRegions: AudioRegion[];

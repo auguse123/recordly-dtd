@@ -53,7 +53,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 				remountPreview,
 			} = inputRef.current;
 			const { shadowIntensity, padding } = appearance;
-			const { audioRegions, clipRegions, selectedClipId } = timeline;
+			const { audioRegions, clipRegions, audioClipRegions, selectedClipId } = timeline;
 			const {
 				exportQuality,
 				exportEncodingMode,
@@ -321,6 +321,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 						}),
 						audioRegions,
 						clipRegions,
+						audioClipRegions,
 						sourceAudioFallbackPaths: audio.sourceAudioFallbackPaths,
 						sourceAudioFallbackStartDelayMsByPath:
 							audio.sourceAudioFallbackStartDelayMsByPath,
@@ -347,6 +348,7 @@ export function useExportRunner(input: ExportRunnerInput) {
 							trimRegions: exporterConfig.trimRegions,
 							speedRegions: exporterConfig.speedRegions,
 							clipRegions,
+							audioClipRegions,
 							sourceAudioFallbackPaths: audio.sourceAudioFallbackPaths,
 							sourceAudioFallbackStartDelayMsByPath:
 								audio.sourceAudioFallbackStartDelayMsByPath,

@@ -129,8 +129,11 @@ export function EditorShell(props: Props) {
 		zoomCommands,
 		clipCommands,
 		audioCommands,
+		audioClipCommands,
 		annotationCommands,
 		editTools,
+		handleTimelineSplit,
+		handleDeleteWithoutSelection,
 		handleSelectAnnotation,
 		handleAutoSuggestZoomsConsumed,
 	} = editing;
@@ -390,6 +393,9 @@ export function EditorShell(props: Props) {
 					zoomCommands={zoomCommands}
 					clipCommands={clipCommands}
 					editTools={editTools}
+					audioClipCommands={audioClipCommands}
+					onTimelineSplit={handleTimelineSplit}
+					onDeleteWithoutSelection={handleDeleteWithoutSelection}
 					audioCommands={audioCommands}
 					captionCommands={captionCommands}
 					annotationCommands={annotationCommands}

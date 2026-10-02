@@ -31,6 +31,7 @@ export function useEditorHistory({
 	const {
 		zoomRegions,
 		clipRegions,
+		audioClipRegions,
 		speedRegions,
 		annotationRegions,
 		audioRegions,
@@ -41,6 +42,7 @@ export function useEditorHistory({
 		selectedAudioId,
 		setZoomRegions,
 		setClipRegions,
+		setAudioClipRegions,
 		setSpeedRegions,
 		setAnnotationRegions,
 		setAudioRegions,
@@ -66,6 +68,7 @@ export function useEditorHistory({
 		(): EditorHistorySnapshot => ({
 			zoomRegions,
 			clipRegions,
+			audioClipRegions,
 			speedRegions,
 			annotationRegions,
 			audioRegions,
@@ -78,6 +81,7 @@ export function useEditorHistory({
 		[
 			zoomRegions,
 			clipRegions,
+			audioClipRegions,
 			speedRegions,
 			annotationRegions,
 			audioRegions,
@@ -94,6 +98,7 @@ export function useEditorHistory({
 			const cloned = cloneStructured(snapshot);
 			setZoomRegions(cloned.zoomRegions);
 			setClipRegions(cloned.clipRegions);
+			setAudioClipRegions(cloned.audioClipRegions ?? null);
 			setSpeedRegions(cloned.speedRegions);
 			setAnnotationRegions(cloned.annotationRegions);
 			setAudioRegions(cloned.audioRegions);
@@ -125,6 +130,7 @@ export function useEditorHistory({
 		[
 			setZoomRegions,
 			setClipRegions,
+			setAudioClipRegions,
 			setSpeedRegions,
 			setAnnotationRegions,
 			setAudioRegions,

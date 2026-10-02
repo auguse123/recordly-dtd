@@ -8,6 +8,7 @@ export interface SeparateTracksContext {
 	trimRegions?: TrimRegion[];
 	speedRegions?: SpeedRegion[];
 	clipRegions?: ClipRegion[];
+	audioClipRegions?: ClipRegion[] | null;
 	micPath: string | null;
 	micStartDelayMs?: number;
 	introSec: number;
@@ -34,6 +35,7 @@ export function rememberSeparateTracksContext(input: {
 	trimRegions?: TrimRegion[];
 	speedRegions?: SpeedRegion[];
 	clipRegions?: ClipRegion[];
+	audioClipRegions?: ClipRegion[] | null;
 	sourceAudioFallbackPaths?: string[];
 	sourceAudioFallbackStartDelayMsByPath?: Record<string, number>;
 	introOutro?: IntroOutroSettings;
@@ -44,6 +46,7 @@ export function rememberSeparateTracksContext(input: {
 		trimRegions: input.trimRegions,
 		speedRegions: input.speedRegions,
 		clipRegions: input.clipRegions,
+		audioClipRegions: input.audioClipRegions,
 		micPath,
 		micStartDelayMs: micPath
 			? input.sourceAudioFallbackStartDelayMsByPath?.[micPath]
@@ -63,7 +66,9 @@ export async function createSeparateTracks(exportedPath: string) {
 		const info = await window.electronAPI.getVoiceTrackInfo(context.micPath);
 		if (info.success && info.rawPath) {
 			const { AudioProcessor } = await import("@/lib/exporter/audioEncoder");
-			const blob = await new AudioProcessor().renderIsolatedSourceTrack({
+			const processor = new AudioProcessor();
+			processor.setDetachedAudioClips(context.audioClipRegions);
+			const blob = await processor.renderIsolatedSourceTrack({
 				videoUrl: context.videoUrl,
 				trackPath: info.rawPath,
 				startDelayMs: context.micStartDelayMs,

@@ -12,6 +12,7 @@ import type { EditorEffectSection } from "../types";
 import type { VideoPlaybackRef } from "../VideoPlayback";
 import { getErrorMessage, summarizeErrorMessage } from "../videoEditorUtils";
 import { useAnnotationRegionCommands } from "./useAnnotationRegionCommands";
+import { useAudioClipCommands } from "./useAudioClipCommands";
 import { useAudioRegionCommands } from "./useAudioRegionCommands";
 import { useCaptionCommands } from "./useCaptionCommands";
 import { useClipRegionCommands } from "./useClipRegionCommands";
@@ -91,6 +92,7 @@ export function useTimelineEditingController(input: Input) {
 		currentSourcePath: input.currentSourcePath,
 		selectedClipId: timeline.selectedClipId,
 		clipRegions: timeline.clipRegions,
+		audioClipRegions: timeline.audioClipRegions,
 		audioRegions: timeline.audioRegions,
 		sourceAudioTrackSettingsByClip: timeline.sourceAudioTrackSettingsByClip,
 		setSourceAudioTrackSettingsByClip: timeline.setSourceAudioTrackSettingsByClip,
@@ -215,6 +217,42 @@ export function useTimelineEditingController(input: Input) {
 		setActiveEffectSection: input.setActiveEffectSection,
 		nextAudioIdRef: input.nextAudioIdRef,
 	});
+	const clearSelectionsForAudioClip = useCallback(() => {
+		timeline.setSelectedClipId(null);
+		timeline.setSelectedZoomId(null);
+		timeline.setSelectedAnnotationId(null);
+		timeline.setSelectedAudioId(null);
+		timeline.setSelectedCaptionId(null);
+	}, [timeline]);
+	const audioClipCommands = useAudioClipCommands({
+		clipRegions: timeline.clipRegions,
+		audioClipRegions: timeline.audioClipRegions,
+		setAudioClipRegions: timeline.setAudioClipRegions,
+		selectedAudioClipId: timeline.selectedAudioClipId,
+		setSelectedAudioClipId: timeline.setSelectedAudioClipId,
+		otherSelectedIds: [
+			timeline.selectedClipId,
+			timeline.selectedZoomId,
+			timeline.selectedAnnotationId,
+			timeline.selectedAudioId,
+			timeline.selectedCaptionId,
+		],
+		clearOtherSelections: clearSelectionsForAudioClip,
+		setActiveEffectSection: input.setActiveEffectSection,
+		sourceDurationMs: input.duration * 1000,
+		timelineDurationMs: projection.timelineDuration * 1000,
+	});
+	const { handleAudioClipSplit, handleAudioClipDelete } = audioClipCommands;
+	const selectedAudioClipId = timeline.selectedAudioClipId;
+	const { handleClipSplit } = clipCommands;
+	/** ⌘B cuts the selected audio clip when there is one, otherwise the video. */
+	const handleTimelineSplit = useCallback(
+		(splitMs: number) => {
+			if (selectedAudioClipId && handleAudioClipSplit(splitMs)) return;
+			handleClipSplit(splitMs);
+		},
+		[handleAudioClipSplit, handleClipSplit, selectedAudioClipId],
+	);
 	const annotationCommands = useAnnotationRegionCommands({
 		onSelectAnnotation: handleSelectAnnotation,
 		setAnnotationRegions: timeline.setAnnotationRegions,
@@ -244,10 +282,19 @@ export function useTimelineEditingController(input: Input) {
 		startPlayback: playback.startPlayback,
 		togglePlayPause: playback.togglePlayPause,
 		handleSeek: playback.handleSeek,
-		handleClipSplit: clipCommands.handleClipSplit,
+		handleClipSplit: handleTimelineSplit,
 		handleRemoveRange: clipCommands.handleRemoveRange,
 		handleTrimToPlayhead: clipCommands.handleTrimToPlayhead,
 	});
+
+	const { deleteMarkedRange } = editTools;
+	const handleDeleteWithoutSelection = useCallback((): boolean => {
+		if (selectedAudioClipId) {
+			handleAudioClipDelete(selectedAudioClipId);
+			return true;
+		}
+		return deleteMarkedRange();
+	}, [deleteMarkedRange, handleAudioClipDelete, selectedAudioClipId]);
 
 	return {
 		cursor,
@@ -258,8 +305,11 @@ export function useTimelineEditingController(input: Input) {
 		zoomCommands,
 		clipCommands,
 		audioCommands,
+		audioClipCommands,
 		annotationCommands,
 		editTools,
+		handleTimelineSplit,
+		handleDeleteWithoutSelection,
 		handleSelectAnnotation,
 		handleAutoSuggestZoomsConsumed: freshZoom.handleAutoSuggestZoomsConsumed,
 	};

@@ -5,6 +5,7 @@ import { useClipAudioReset } from "../audio/useClipAudioReset";
 import type { useAutoCaptionController } from "../captions/useAutoCaptionController";
 import { findMicSidecarPath } from "../export/separateTracks";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
+import type { useAudioClipCommands } from "../hooks/useAudioClipCommands";
 import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
 import type { useCaptionCommands } from "../hooks/useCaptionCommands";
 import type { useClipRegionCommands } from "../hooks/useClipRegionCommands";
@@ -22,6 +23,7 @@ type Input = {
 	zoomCommands: ReturnType<typeof useZoomRegionCommands>;
 	clipCommands: ReturnType<typeof useClipRegionCommands>;
 	audioCommands: ReturnType<typeof useAudioRegionCommands>;
+	audioClipCommands: ReturnType<typeof useAudioClipCommands>;
 	captionCommands: ReturnType<typeof useCaptionCommands>;
 	annotationCommands: ReturnType<typeof useAnnotationRegionCommands>;
 	autoCaptionController: ReturnType<typeof useAutoCaptionController>;
@@ -54,6 +56,7 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		zoomCommands,
 		clipCommands,
 		audioCommands,
+		audioClipCommands,
 		captionCommands,
 		annotationCommands,
 		autoCaptionController,
@@ -111,6 +114,14 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		selectedClipTransition: selectedClip?.transitionOut ?? null,
 		onClipTransitionChange: clipCommands.handleClipTransitionChange,
 		onClipDelete: clipCommands.handleClipDelete,
+		isAudioDetached: audioClipCommands.isAudioDetached,
+		onDetachAudio: audioClipCommands.handleDetachAudio,
+		onReattachAudio: audioClipCommands.handleReattachAudio,
+		selectedAudioClipId: timeline.selectedAudioClipId,
+		selectedAudioClip: audioClipCommands.selectedAudioClip,
+		onAudioClipVolumeChange: audioClipCommands.handleAudioClipVolumeChange,
+		onAudioClipMutedChange: audioClipCommands.handleAudioClipMutedChange,
+		onAudioClipDelete: audioClipCommands.handleAudioClipDelete,
 		selectedAudioId: timeline.selectedAudioId,
 		selectedAudioVolume: selectedAudio?.volume ?? null,
 		selectedAudioNormalize:

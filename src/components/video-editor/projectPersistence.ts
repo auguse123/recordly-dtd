@@ -1,4 +1,5 @@
 import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/audioTypes";
+import { normalizeAudioClipRegions } from "@/components/video-editor/audio/detachedAudio";
 import { getAudioRegionMix } from "@/components/video-editor/audio/musicDucking";
 import type {
 	ExportBackendPreference,
@@ -139,6 +140,8 @@ export interface ProjectEditorState {
 	zoomRegions: ZoomRegion[];
 	trimRegions: TrimRegion[];
 	clipRegions: ClipRegion[];
+	/** Detached audio clips; null/absent while audio follows the video clips. */
+	audioClipRegions?: ClipRegion[] | null;
 	autoFullTrackClipId?: string | null;
 	autoFullTrackClipEndMs?: number | null;
 	speedRegions: SpeedRegion[];
@@ -984,6 +987,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 			: normalizedZoomRegions,
 		trimRegions: normalizedTrimRegions,
 		clipRegions: sequenceClips,
+		audioClipRegions: normalizeAudioClipRegions(editor.audioClipRegions),
 		autoFullTrackClipId: normalizedAutoFullTrackClipId,
 		autoFullTrackClipEndMs: normalizedAutoFullTrackClipEndMs,
 		speedRegions: normalizedSpeedRegions,

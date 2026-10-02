@@ -5,6 +5,7 @@ import { getGainAt, getTransitionGainEnvelope, resolveClipTransitions } from "..
 import type { AudioRegion, ClipRegion } from "../types";
 import { findClipAtTimelineTime } from "../types";
 import { isClipMutedById } from "./clipAudio";
+import { findAudioClipAt, getAudioClipSourceTimeMs, getAudioClipVolume } from "./detachedAudio";
 import { useAudioPreviewSync } from "./useAudioPreviewSync";
 import { useClipAudioSettingsController } from "./useClipAudioSettingsController";
 import { useMusicDuckingEnvelopes } from "./useMusicDuckingEnvelopes";
@@ -29,6 +30,8 @@ interface UseVideoEditorAudioParams {
 	currentSourcePath: string | null;
 	selectedClipId: string | null;
 	clipRegions: ClipRegion[];
+	/** Audio clips cut apart from the video, or null while the sound follows the video. */
+	audioClipRegions?: ClipRegion[] | null;
 	audioRegions: AudioRegion[];
 	sourceAudioTrackSettingsByClip: Record<string, SourceAudioTrackSettings>;
 	setSourceAudioTrackSettingsByClip: React.Dispatch<
@@ -52,6 +55,7 @@ export function useVideoEditorAudio({
 	currentSourcePath,
 	selectedClipId,
 	clipRegions,
+	audioClipRegions = null,
 	audioRegions,
 	sourceAudioTrackSettingsByClip,
 	setSourceAudioTrackSettingsByClip,
@@ -82,8 +86,19 @@ export function useVideoEditorAudio({
 		() => resolveSourceTrackRoutingPolicy(currentSourcePath, sourceAudioFallbackPaths),
 		[currentSourcePath, sourceAudioFallbackPaths],
 	);
+	const isAudioDetached = audioClipRegions !== null;
 	const previewSourceAudioFallbackPaths = sourceTrackRoutingPolicy.playbackPaths;
-	const shouldMutePreviewVideo = sourceTrackRoutingPolicy.muteEmbeddedPreview;
+	// Detached audio plays on its own clock, so the video element stays silent
+	// and the recording's own sound (when it carries any) is played separately.
+	const shouldMutePreviewVideo = isAudioDetached || sourceTrackRoutingPolicy.muteEmbeddedPreview;
+	const embeddedSourceAudioPath =
+		isAudioDetached && !sourceTrackRoutingPolicy.muteEmbeddedPreview
+			? fallbackLookupSourcePath
+			: null;
+	const activeAudioClip = useMemo(
+		() => (audioClipRegions ? findAudioClipAt(timelineTime * 1000, audioClipRegions) : null),
+		[audioClipRegions, timelineTime],
+	);
 
 	const activeClipIdAtCurrentTime = useMemo(
 		() => findClipAtTimelineTime(timelineTime * 1000, clipRegions)?.id ?? null,
@@ -101,6 +116,21 @@ export function useVideoEditorAudio({
 		[clipRegions],
 	);
 	const sourceTransitionGain = getGainAt(transitionGainEnvelope, timelineTime * 1000);
+	const isSourceAudioMuted = isAudioDetached
+		? !activeAudioClip || Boolean(activeAudioClip.muted)
+		: isCurrentClipMuted;
+	const sourceAudioGain = isAudioDetached
+		? activeAudioClip
+			? getAudioClipVolume(activeAudioClip)
+			: 0
+		: sourceTransitionGain;
+	const sourceAudioTime =
+		isAudioDetached && activeAudioClip
+			? getAudioClipSourceTimeMs(activeAudioClip, timelineTime * 1000) / 1000
+			: currentTime;
+	const sourceAudioPlaybackRate = isAudioDetached
+		? (activeAudioClip?.speed ?? 1)
+		: (findClipAtTimelineTime(timelineTime * 1000, clipRegions)?.speed ?? 1);
 
 	const {
 		sourceAudioTrackMeta,
@@ -125,9 +155,20 @@ export function useVideoEditorAudio({
 		() => sourceAudioFallbackPaths.find((path) => path.includes(".mic.")) ?? null,
 		[sourceAudioFallbackPaths],
 	);
+	const getPreviewSourceTrackGain = useMemo(
+		() =>
+			embeddedSourceAudioPath
+				? (path: string) =>
+						path === embeddedSourceAudioPath
+							? embeddedSourcePreviewGain
+							: getSourceTrackPreviewGain(path)
+				: getSourceTrackPreviewGain,
+		[embeddedSourceAudioPath, embeddedSourcePreviewGain, getSourceTrackPreviewGain],
+	);
+
 	const userTrackGainEnvelopes = useMusicDuckingEnvelopes({
 		audioRegions,
-		clipRegions,
+		clipRegions: audioClipRegions ?? clipRegions,
 		voicePath: micSidecarPath ?? fallbackLookupSourcePath,
 		voiceStartDelayMs: micSidecarPath
 			? (sourceAudioFallbackStartDelayMsByPath[micSidecarPath] ?? 0)
@@ -138,17 +179,18 @@ export function useVideoEditorAudio({
 		audioRegions,
 		previewVolume,
 		isPlaying,
-		currentTime,
+		currentTime: sourceAudioTime,
 		timelineTime,
 		duration,
-		sourcePlaybackRate: findClipAtTimelineTime(timelineTime * 1000, clipRegions)?.speed ?? 1,
+		sourcePlaybackRate: sourceAudioPlaybackRate,
 		previewSourceAudioFallbackPaths,
 		sourceAudioFallbackStartDelayMsByPath,
 		sourceAudioResourceVersion: sourceAudioFallbackRefreshKey,
-		isCurrentClipMuted,
-		sourceTransitionGain,
+		isCurrentClipMuted: isSourceAudioMuted,
+		embeddedSourceAudioPath,
+		sourceTransitionGain: sourceAudioGain,
 		userTrackGainEnvelopes,
-		getSourceTrackPreviewGain,
+		getSourceTrackPreviewGain: getPreviewSourceTrackGain,
 		onSourceFallbackLoadError,
 	});
 

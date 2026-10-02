@@ -26,6 +26,7 @@ import {
 import {
 	CAPTION_ROW_ID,
 	CLIP_ROW_ID,
+	DETACHED_AUDIO_ROW_ID,
 	SOURCE_AUDIO_ROW_ID,
 	ZOOM_ROW_ID,
 } from "../../core/constants";
@@ -86,6 +87,9 @@ interface TimelineCanvasProps {
 	sourceAudioTracks?: SourceAudioTrackWithPeaks[];
 	getSourceAudioTrackSettingsForClip?: (clipId: string | null) => SourceAudioTrackSettings;
 	showSourceAudioTrack?: boolean;
+	isAudioDetached?: boolean;
+	selectedAudioClipId?: string | null;
+	onSelectAudioClip?: (id: string | null) => void;
 	liveSpanPreviewById?: Record<string, { start: number; end: number }>;
 	liveHiddenItemIds?: string[];
 	isDragging?: boolean;
@@ -422,6 +426,9 @@ interface TimelineCanvasRowsProps {
 	sourceAudioTracks?: SourceAudioTrackWithPeaks[];
 	getSourceAudioTrackSettingsForClip?: (clipId: string | null) => SourceAudioTrackSettings;
 	showSourceAudioTrack?: boolean;
+	isAudioDetached?: boolean;
+	selectedAudioClipId?: string | null;
+	onSelectAudioClip?: (id: string | null) => void;
 	liveSpanPreviewById?: Record<string, { start: number; end: number }>;
 	liveHiddenItemIds?: string[];
 	direction: string;
@@ -499,6 +506,9 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 	sourceAudioTracks = [],
 	getSourceAudioTrackSettingsForClip,
 	showSourceAudioTrack = false,
+	isAudioDetached = false,
+	selectedAudioClipId = null,
+	onSelectAudioClip,
 	liveSpanPreviewById,
 	liveHiddenItemIds,
 	direction,
@@ -526,62 +536,69 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 		range: { start: rangeStart },
 	} = useTimelineContext();
 	const hiddenIds = useMemo(() => new Set(liveHiddenItemIds ?? []), [liveHiddenItemIds]);
-	const { clipItems, zoomItems, captionItems, annotationRows, audioRows } = useMemo(() => {
-		const nextClipItems: TimelineRenderItem[] = [];
-		const nextZoomItems: TimelineRenderItem[] = [];
-		const nextCaptionItems: TimelineRenderItem[] = [];
-		const annotationBuckets = new Map<number, TimelineRenderItem[]>();
-		const audioBuckets = new Map<number, TimelineRenderItem[]>();
+	const { clipItems, zoomItems, captionItems, annotationRows, audioRows, audioClipItems } =
+		useMemo(() => {
+			const nextClipItems: TimelineRenderItem[] = [];
+			const nextAudioClipItems: TimelineRenderItem[] = [];
+			const nextZoomItems: TimelineRenderItem[] = [];
+			const nextCaptionItems: TimelineRenderItem[] = [];
+			const annotationBuckets = new Map<number, TimelineRenderItem[]>();
+			const audioBuckets = new Map<number, TimelineRenderItem[]>();
 
-		for (const item of items) {
-			if (item.rowId === CLIP_ROW_ID) {
-				nextClipItems.push(item);
-				continue;
+			for (const item of items) {
+				if (item.rowId === CLIP_ROW_ID) {
+					nextClipItems.push(item);
+					continue;
+				}
+				if (item.rowId === ZOOM_ROW_ID) {
+					nextZoomItems.push(item);
+					continue;
+				}
+				if (item.rowId === CAPTION_ROW_ID) {
+					nextCaptionItems.push(item);
+					continue;
+				}
+				if (item.rowId === DETACHED_AUDIO_ROW_ID) {
+					nextAudioClipItems.push(item);
+					continue;
+				}
+				if (isAnnotationTrackRowId(item.rowId)) {
+					const trackIndex = getAnnotationTrackIndex(item.rowId);
+					const bucket = annotationBuckets.get(trackIndex);
+					if (bucket) bucket.push(item);
+					else annotationBuckets.set(trackIndex, [item]);
+					continue;
+				}
+				if (isAudioTrackRowId(item.rowId)) {
+					const trackIndex = getAudioTrackIndex(item.rowId);
+					const bucket = audioBuckets.get(trackIndex);
+					if (bucket) bucket.push(item);
+					else audioBuckets.set(trackIndex, [item]);
+				}
 			}
-			if (item.rowId === ZOOM_ROW_ID) {
-				nextZoomItems.push(item);
-				continue;
-			}
-			if (item.rowId === CAPTION_ROW_ID) {
-				nextCaptionItems.push(item);
-				continue;
-			}
-			if (isAnnotationTrackRowId(item.rowId)) {
-				const trackIndex = getAnnotationTrackIndex(item.rowId);
-				const bucket = annotationBuckets.get(trackIndex);
-				if (bucket) bucket.push(item);
-				else annotationBuckets.set(trackIndex, [item]);
-				continue;
-			}
-			if (isAudioTrackRowId(item.rowId)) {
-				const trackIndex = getAudioTrackIndex(item.rowId);
-				const bucket = audioBuckets.get(trackIndex);
-				if (bucket) bucket.push(item);
-				else audioBuckets.set(trackIndex, [item]);
-			}
-		}
 
-		const annotationRowsSorted = Array.from(annotationBuckets.entries())
-			.sort(([left], [right]) => left - right)
-			.map(([trackIndex, rowItems]) => ({
-				rowId: getAnnotationTrackRowId(trackIndex),
-				items: rowItems,
-			}));
-		const audioRowsSorted = Array.from(audioBuckets.entries())
-			.sort(([left], [right]) => left - right)
-			.map(([trackIndex, rowItems]) => ({
-				rowId: getAudioTrackRowId(trackIndex),
-				items: rowItems,
-			}));
+			const annotationRowsSorted = Array.from(annotationBuckets.entries())
+				.sort(([left], [right]) => left - right)
+				.map(([trackIndex, rowItems]) => ({
+					rowId: getAnnotationTrackRowId(trackIndex),
+					items: rowItems,
+				}));
+			const audioRowsSorted = Array.from(audioBuckets.entries())
+				.sort(([left], [right]) => left - right)
+				.map(([trackIndex, rowItems]) => ({
+					rowId: getAudioTrackRowId(trackIndex),
+					items: rowItems,
+				}));
 
-		return {
-			clipItems: nextClipItems,
-			zoomItems: nextZoomItems,
-			captionItems: nextCaptionItems,
-			annotationRows: annotationRowsSorted,
-			audioRows: audioRowsSorted,
-		};
-	}, [items]);
+			return {
+				clipItems: nextClipItems,
+				zoomItems: nextZoomItems,
+				captionItems: nextCaptionItems,
+				annotationRows: annotationRowsSorted,
+				audioRows: audioRowsSorted,
+				audioClipItems: nextAudioClipItems,
+			};
+		}, [items]);
 
 	const { clips } = useTimelinePresentation();
 	const clipPresentation = useMemo(
@@ -753,7 +770,48 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 					);
 				})}
 			</Row>
-			{showSourceAudioTrack &&
+			{isAudioDetached &&
+				(sourceAudioTracks.length > 0 ? sourceAudioTracks : [null]).map((track, index) => {
+					// The first lane carries the draggable clips; the other source
+					// tracks follow them so each waveform stays visible.
+					const rowId = track
+						? `${DETACHED_AUDIO_ROW_ID}-${track.id}`
+						: DETACHED_AUDIO_ROW_ID;
+					const isPrimaryLane = index === 0;
+					return (
+						<Row
+							key={rowId}
+							id={isPrimaryLane ? DETACHED_AUDIO_ROW_ID : rowId}
+							isEmpty={audioClipItems.length === 0}
+						>
+							{audioClipItems.map((item) => (
+								<Item
+									key={isPrimaryLane ? item.id : `${rowId}-${item.id}`}
+									id={isPrimaryLane ? item.id : `${rowId}-${item.id}`}
+									rowId={isPrimaryLane ? DETACHED_AUDIO_ROW_ID : rowId}
+									span={item.span}
+									disabled={!isPrimaryLane}
+									isSelected={item.id === selectedAudioClipId}
+									onSelect={
+										isPrimaryLane
+											? undefined
+											: () => onSelectAudioClip?.(item.id)
+									}
+									onSelectId={isPrimaryLane ? onSelectAudioClip : undefined}
+									variant="audio"
+									waveformPeaks={track?.peaks}
+									waveformSegmentSpan={item.sourceSpan ?? item.span}
+									waveformGain={Math.max(0, Math.min(1, item.audioGain ?? 1))}
+									muted={item.muted}
+								>
+									{track ? `${item.label} · ${track.label}` : item.label}
+								</Item>
+							))}
+						</Row>
+					);
+				})}
+			{!isAudioDetached &&
+				showSourceAudioTrack &&
 				sourceAudioTracks.map((track) => (
 					<Row key={track.id} id={`${SOURCE_AUDIO_ROW_ID}-${track.id}`}>
 						{clipItems
@@ -790,7 +848,11 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 				compact={
 					annotationRows.length +
 						audioRows.length +
-						(showSourceAudioTrack ? sourceAudioTracks.length : 0) >
+						(isAudioDetached
+							? Math.max(1, sourceAudioTracks.length)
+							: showSourceAudioTrack
+								? sourceAudioTracks.length
+								: 0) >
 					0
 				}
 				isEmpty={zoomItems.length === 0}
@@ -929,6 +991,9 @@ export default function TimelineCanvas({
 	sourceAudioTracks = [],
 	getSourceAudioTrackSettingsForClip,
 	showSourceAudioTrack = false,
+	isAudioDetached = false,
+	selectedAudioClipId = null,
+	onSelectAudioClip,
 	liveSpanPreviewById,
 	liveHiddenItemIds,
 	isDragging = false,
@@ -1095,9 +1160,13 @@ export default function TimelineCanvas({
 			if (isAnnotationTrackRowId(item.rowId)) annotationRowIds.add(item.rowId);
 			if (isAudioTrackRowId(item.rowId)) audioRowIds.add(item.rowId);
 		}
-		const sourceAudioRows = showSourceAudioTrack ? sourceAudioTracks.length : 0;
+		const sourceAudioRows = isAudioDetached
+			? Math.max(1, sourceAudioTracks.length)
+			: showSourceAudioTrack
+				? sourceAudioTracks.length
+				: 0;
 		return 2 + sourceAudioRows + annotationRowIds.size + audioRowIds.size;
-	}, [items, showSourceAudioTrack, sourceAudioTracks.length]);
+	}, [isAudioDetached, items, showSourceAudioTrack, sourceAudioTracks.length]);
 	const timelineRowsMinHeightPx = getTimelineRowsMinHeightPx(timelineRowCount);
 	const timelineContentMinHeightPx = getTimelineContentMinHeightPx(timelineRowCount);
 	const sideProperty = direction === "rtl" ? "right" : "left";
@@ -1210,6 +1279,9 @@ export default function TimelineCanvas({
 					sourceAudioTracks={sourceAudioTracks}
 					getSourceAudioTrackSettingsForClip={getSourceAudioTrackSettingsForClip}
 					showSourceAudioTrack={showSourceAudioTrack}
+					isAudioDetached={isAudioDetached}
+					selectedAudioClipId={selectedAudioClipId}
+					onSelectAudioClip={onSelectAudioClip}
 					liveSpanPreviewById={liveSpanPreviewById}
 					liveHiddenItemIds={liveHiddenItemIds}
 					direction={direction}

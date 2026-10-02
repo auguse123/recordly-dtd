@@ -114,6 +114,8 @@ export interface TimelineSlice {
 	sourceStartMs: number;
 	sourceEndMs: number;
 	speed: number;
+	/** Extra volume of this slice (detached audio clips), 1 when unset. */
+	gain?: number;
 }
 
 export interface PreparedOfflineRender {
