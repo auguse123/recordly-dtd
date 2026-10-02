@@ -107,6 +107,8 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		selectedClipMuted: selectedClip?.muted ?? (timeline.selectedClipId ? false : null),
 		onClipSpeedChange: clipCommands.handleClipSpeedChange,
 		onClipMutedChange: clipCommands.handleClipMutedChange,
+		selectedClipTransition: selectedClip?.transitionOut ?? null,
+		onClipTransitionChange: clipCommands.handleClipTransitionChange,
 		onClipDelete: clipCommands.handleClipDelete,
 		selectedAudioId: timeline.selectedAudioId,
 		selectedAudioVolume: selectedAudio?.volume ?? null,

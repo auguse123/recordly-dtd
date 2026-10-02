@@ -1,3 +1,5 @@
+import type { ClipTransition } from "./clipTransitions";
+
 export type ZoomDepth = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface ZoomFocus {
@@ -246,6 +248,8 @@ export interface ClipRegion {
 	speed: number;
 	muted?: boolean;
 	showSourceAudio?: boolean;
+	/** Transition into the next clip (or out to black on the last clip). */
+	transitionOut?: ClipTransition;
 }
 
 export function getClipSourceStartMs(clip: ClipRegion): number {

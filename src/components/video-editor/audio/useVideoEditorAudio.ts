@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/audioTypes";
 import { resolveSourceTrackRoutingPolicy } from "@/lib/exporter/sourceTrackRoutingPolicy";
+import { getGainAt, getTransitionGainEnvelope, resolveClipTransitions } from "../clipTransitions";
 import type { AudioRegion, ClipRegion } from "../types";
 import { findClipAtTimelineTime } from "../types";
 import { isClipMutedById } from "./clipAudio";
@@ -94,6 +95,12 @@ export function useVideoEditorAudio({
 		[activeClipIdAtCurrentTime, clipRegions],
 	);
 
+	const transitionGainEnvelope = useMemo(
+		() => getTransitionGainEnvelope(resolveClipTransitions(clipRegions)),
+		[clipRegions],
+	);
+	const sourceTransitionGain = getGainAt(transitionGainEnvelope, timelineTime * 1000);
+
 	const {
 		sourceAudioTrackMeta,
 		activeSourceAudioTrackSettings,
@@ -125,6 +132,7 @@ export function useVideoEditorAudio({
 		sourceAudioFallbackStartDelayMsByPath,
 		sourceAudioResourceVersion: sourceAudioFallbackRefreshKey,
 		isCurrentClipMuted,
+		sourceTransitionGain,
 		getSourceTrackPreviewGain,
 		onSourceFallbackLoadError,
 	});
@@ -136,6 +144,7 @@ export function useVideoEditorAudio({
 		shouldMutePreviewVideo,
 		activeClipIdAtCurrentTime,
 		isCurrentClipMuted,
+		sourceTransitionGain,
 		sourceAudioTrackMeta,
 		activeSourceAudioTrackSettings,
 		selectedClipSourceAudioTrackSettings,

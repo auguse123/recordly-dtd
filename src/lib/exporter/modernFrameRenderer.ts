@@ -11,10 +11,16 @@ import {
 	getCaptionTextMaxWidth,
 	getCaptionWordVisualState,
 } from "@/components/video-editor/captionStyle";
+import {
+	getTransitionFrameState,
+	type ResolvedClipTransition,
+	resolveClipTransitions,
+} from "@/components/video-editor/clipTransitions";
 import type {
 	AnnotationRegion,
 	AutoCaptionSettings,
 	CaptionCue,
+	ClipRegion,
 	CropRegion,
 	CursorClickEffectStyle,
 	CursorStyle,
@@ -53,7 +59,11 @@ import {
 } from "@/components/video-editor/videoPlayback/motionSmoothing";
 import { getSceneEffectMetrics } from "@/components/video-editor/videoPlayback/sceneEffects";
 import { resolveSceneZoomTarget } from "@/components/video-editor/videoPlayback/sceneMotion";
-import { getWebcamMediaTargetTimeSeconds, isWebcamVisibleAtSourceTime } from "@/components/video-editor/videoPlayback/webcamSync";
+import { TransitionFreezeFrame } from "@/components/video-editor/videoPlayback/transitionFreezeFrame";
+import {
+	getWebcamMediaTargetTimeSeconds,
+	isWebcamVisibleAtSourceTime,
+} from "@/components/video-editor/videoPlayback/webcamSync";
 import {
 	applyZoomTransform,
 	computeZoomTransform,
@@ -98,6 +108,8 @@ import type { ExportRenderBackend } from "./types";
 
 interface FrameRenderConfig {
 	timelineEffects?: boolean;
+	/** Clip sequence, for transitions between clips (timeline time). */
+	clipRegions?: ClipRegion[];
 	width: number;
 	height: number;
 	preferredRenderBackend?: ExportRenderBackend;
@@ -375,6 +387,9 @@ export class FrameRenderer {
 	private webcamContainer: Container | null = null;
 	private videoSprite: Sprite | null = null;
 	private videoTextureSource: MutableVideoTextureSource | null = null;
+	private clipTransitions: ResolvedClipTransition[] = [];
+	private freezeFrame: TransitionFreezeFrame | null = null;
+	private transitionShade: Graphics | null = null;
 	private backgroundSprite: Sprite | null = null;
 	private backgroundTextureSource: MutableVideoTextureSource | null = null;
 	private videoMaskGraphics: Graphics | null = null;
@@ -547,6 +562,18 @@ export class FrameRenderer {
 		this.videoMaskGraphics = new Graphics();
 		this.videoEffectsContainer.addChild(this.videoMaskGraphics);
 		this.videoContainer.mask = this.videoMaskGraphics;
+
+		this.clipTransitions = resolveClipTransitions(this.config.clipRegions ?? []);
+		if (this.clipTransitions.length > 0) {
+			// The video sprite is inserted below it on the first frame.
+			this.freezeFrame = new TransitionFreezeFrame();
+			this.videoContainer.addChild(this.freezeFrame.sprite);
+			this.transitionShade = new Graphics()
+				.rect(0, 0, this.config.width, this.config.height)
+				.fill(0x000000);
+			this.transitionShade.alpha = 0;
+			this.app.stage.addChild(this.transitionShade);
+		}
 
 		this.webcamMaskGraphics = new Graphics();
 		this.webcamContainer.addChild(this.webcamMaskGraphics);
@@ -2725,7 +2752,12 @@ export class FrameRenderer {
 
 	private updateWebcamOverlay(referenceTimeSeconds = this.currentVideoTime): void {
 		const webcam = this.config.webcam;
-		if (!webcam?.enabled || !isWebcamVisibleAtSourceTime(webcam, referenceTimeSeconds) || !this.webcamRootContainer || !this.webcamMaskGraphics) {
+		if (
+			!webcam?.enabled ||
+			!isWebcamVisibleAtSourceTime(webcam, referenceTimeSeconds) ||
+			!this.webcamRootContainer ||
+			!this.webcamMaskGraphics
+		) {
 			if (this.webcamRootContainer) {
 				this.webcamRootContainer.visible = false;
 			}
@@ -2857,6 +2889,13 @@ export class FrameRenderer {
 
 		this.currentVideoTime = timestamp / 1_000_000;
 		this.cameraContainer.visible = videoFrame !== null;
+		const transitionTimeMs = backgroundTimelineTimestamp / 1000;
+		if (this.transitionShade) {
+			this.transitionShade.alpha = getTransitionFrameState(
+				this.clipTransitions,
+				transitionTimeMs,
+			).blackAlpha;
+		}
 		if (!videoFrame) {
 			this.updateAnimationState(backgroundTimelineTimestamp / 1000, cursorTimestamp / 1000);
 			if (this.backgroundForwardFrameSource || this.backgroundVideoElement) {
@@ -2898,6 +2937,25 @@ export class FrameRenderer {
 
 		if (!this.layoutCache) {
 			this.updateLayout();
+		}
+		if (this.freezeFrame) {
+			// One decoder: keep the outgoing clip's last frame for the crossfade.
+			const captureSeam = TransitionFreezeFrame.findCaptureSeam(
+				this.clipTransitions,
+				transitionTimeMs,
+			);
+			if (captureSeam !== null) {
+				this.freezeFrame.capture(
+					resolvedVideoSource,
+					videoFrame.displayWidth,
+					videoFrame.displayHeight,
+					captureSeam,
+				);
+			}
+			this.freezeFrame.apply(
+				getTransitionFrameState(this.clipTransitions, transitionTimeMs),
+				this.videoSprite,
+			);
 		}
 		const layoutCache = this.layoutCache;
 		if (!layoutCache) {
@@ -3242,6 +3300,10 @@ export class FrameRenderer {
 		this.zoomBlurFilter?.destroy();
 		this.motionBlurFilter?.destroy();
 		this.backgroundBlurFilter?.destroy();
+		this.freezeFrame?.destroy();
+		this.freezeFrame = null;
+		this.transitionShade = null;
+		this.clipTransitions = [];
 
 		destroyPixiApplication(this.app, "Lightning export renderer");
 

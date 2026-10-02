@@ -129,7 +129,15 @@ export function EditorVideoPreview({
 			volume={
 				audio.shouldMutePreviewVideo || audio.isCurrentClipMuted
 					? 0
-					: Math.max(0, Math.min(1, previewVolume * audio.embeddedSourcePreviewGain))
+					: Math.max(
+							0,
+							Math.min(
+								1,
+								previewVolume *
+									audio.embeddedSourcePreviewGain *
+									audio.sourceTransitionGain,
+							),
+						)
 			}
 			suspendRendering={suspendRendering}
 			{...handlers}

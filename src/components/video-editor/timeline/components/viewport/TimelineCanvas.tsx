@@ -726,6 +726,7 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 						videoPath={videoPath}
 						sourceSpan={item.sourceSpan ?? item.span}
 						speedValue={item.speedValue}
+						transitionOut={item.transitionOut}
 					>
 						{item.label}
 					</Item>

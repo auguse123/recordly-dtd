@@ -31,6 +31,8 @@ interface UseAudioPreviewSyncParams {
 	sourceAudioFallbackStartDelayMsByPath: Record<string, number>;
 	sourceAudioResourceVersion: number;
 	isCurrentClipMuted: boolean;
+	/** Fade of the recording's sound around clip transitions, 0–1. */
+	sourceTransitionGain?: number;
 	getSourceTrackPreviewGain: (audioPath: string) => number;
 	onSourceFallbackLoadError: (error: unknown) => void;
 }
@@ -47,9 +49,13 @@ export function useAudioPreviewSync({
 	sourceAudioFallbackStartDelayMsByPath,
 	sourceAudioResourceVersion,
 	isCurrentClipMuted,
+	sourceTransitionGain = 1,
 	getSourceTrackPreviewGain,
 	onSourceFallbackLoadError,
 }: UseAudioPreviewSyncParams) {
+	const sourcePreviewVolume = isCurrentClipMuted
+		? 0
+		: previewVolume * Math.max(0, Math.min(1, sourceTransitionGain));
 	const resolvedPlan = useMemo(
 		() =>
 			buildResolvedAudioPlan({
@@ -268,17 +274,15 @@ export function useAudioPreviewSync({
 
 			audio.volume = Math.max(
 				0,
-				Math.min(
-					1,
-					getSourceTrackPreviewGain(audioPath) * (isCurrentClipMuted ? 0 : previewVolume),
-				),
+				Math.min(1, getSourceTrackPreviewGain(audioPath) * sourcePreviewVolume),
 			);
 		}
 
 		if (sourceAudioMasterGainRef.current) {
-			sourceAudioMasterGainRef.current.gain.value = isCurrentClipMuted
-				? 0
-				: Math.max(0, Math.min(1, previewVolume));
+			sourceAudioMasterGainRef.current.gain.value = Math.max(
+				0,
+				Math.min(1, sourcePreviewVolume),
+			);
 		}
 
 		if (resolvedSourceTracks.length === 0) {
@@ -286,11 +290,10 @@ export function useAudioPreviewSync({
 		}
 	}, [
 		getSourceTrackPreviewGain,
-		isCurrentClipMuted,
 		onSourceFallbackLoadError,
 		resolvedSourceTracks,
 		sourceAudioResourceVersion,
-		previewVolume,
+		sourcePreviewVolume,
 	]);
 
 	useEffect(() => {
@@ -387,9 +390,10 @@ export function useAudioPreviewSync({
 			? SOURCE_AUDIO_PREVIEW_PLAYING_SEEK_DRIFT_SECONDS
 			: SOURCE_AUDIO_PREVIEW_PAUSED_SEEK_DRIFT_SECONDS;
 		if (sourceAudioMasterGainRef.current) {
-			sourceAudioMasterGainRef.current.gain.value = isCurrentClipMuted
-				? 0
-				: Math.max(0, Math.min(1, previewVolume));
+			sourceAudioMasterGainRef.current.gain.value = Math.max(
+				0,
+				Math.min(1, sourcePreviewVolume),
+			);
 		}
 
 		for (const audio of sourceAudioElementsRef.current.values()) {
@@ -401,11 +405,7 @@ export function useAudioPreviewSync({
 			const sourceAudioPath = audio.dataset.sourceAudioPath ?? "";
 			audio.volume = Math.max(
 				0,
-				Math.min(
-					1,
-					getSourceTrackPreviewGain(sourceAudioPath) *
-						(isCurrentClipMuted ? 0 : previewVolume),
-				),
+				Math.min(1, getSourceTrackPreviewGain(sourceAudioPath) * sourcePreviewVolume),
 			);
 
 			enablePitchPreservingPlayback(audio);
@@ -472,7 +472,7 @@ export function useAudioPreviewSync({
 		getSourceTrackPreviewGain,
 		isCurrentClipMuted,
 		isPlaying,
-		previewVolume,
+		sourcePreviewVolume,
 		resolvedSourceTracks,
 		sourceAudioFallbackStartDelayMsByPath,
 		ensureSourceAudioRunning,

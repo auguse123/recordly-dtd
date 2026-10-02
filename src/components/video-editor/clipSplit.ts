@@ -35,6 +35,8 @@ export function planClipSplit(params: {
 		...target,
 		id: createId(),
 		endMs: splitAtMs,
+		// The transition belongs to the original clip's end, now the right half's.
+		transitionOut: undefined,
 	};
 	const right: ClipRegion = {
 		...target,

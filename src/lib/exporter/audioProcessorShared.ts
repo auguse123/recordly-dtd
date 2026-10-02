@@ -1,4 +1,5 @@
 import { SOURCE_AUDIO_NORMALIZE_GAIN } from "@/components/video-editor/audio/audioTypes";
+import type { GainPoint } from "@/components/video-editor/clipTransitions";
 import type {
 	AudioRegion,
 	ClipRegion,
@@ -121,6 +122,8 @@ export interface PreparedOfflineRender {
 	companionEntries: Array<{ buffer: AudioBuffer; startDelaySec: number; gain: number }>;
 	regionEntries: Array<{ buffer: AudioBuffer; region: AudioRegion }>;
 	mutedSourceOutputRangesSec: Array<{ startSec: number; endSec: number }>;
+	/** Fades of the recording's sound around clip transitions (output ms). */
+	sourceGainEnvelope?: GainPoint[];
 	slices: TimelineSlice[];
 	outputDurationMs: number;
 	numChannels: number;

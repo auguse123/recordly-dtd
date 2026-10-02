@@ -33,6 +33,13 @@ import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
 import CaptionListPanel from "./CaptionListPanel";
 import type { CaptionRetimeSpan } from "./captionOps";
 import {
+	CLIP_TRANSITION_DEFAULT_MS,
+	CLIP_TRANSITION_MAX_MS,
+	CLIP_TRANSITION_MIN_MS,
+	type ClipTransition,
+	type ClipTransitionType,
+} from "./clipTransitions";
+import {
 	CURSOR_MOTION_PRESETS,
 	type CursorMotionPresetId,
 	getMatchingCursorMotionPresetId,
@@ -445,6 +452,8 @@ interface SettingsPanelProps {
 	onResetClipAudio?: () => void;
 	onClipSpeedChange?: (speed: number) => void;
 	onClipMutedChange?: (muted: boolean) => void;
+	selectedClipTransition?: ClipTransition | null;
+	onClipTransitionChange?: (transition: ClipTransition | undefined) => void;
 	onClipDelete?: (id: string) => void;
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
@@ -909,6 +918,8 @@ export function SettingsPanel({
 	onResetClipAudio,
 	onClipSpeedChange,
 	onClipMutedChange,
+	selectedClipTransition,
+	onClipTransitionChange,
 	onClipDelete,
 	selectedAudioId,
 	selectedAudioVolume,
@@ -2771,6 +2782,56 @@ export function SettingsPanel({
 						aria-label={tSettings("clip.mute", "Mute clip")}
 					/>
 				</label>
+				<SectionLabel>{tSettings("clip.transition", "Transition out")}</SectionLabel>
+				<ChoiceGroup
+					aria-label={tSettings("clip.transition", "Transition out")}
+					value={selectedClipTransition?.type ?? "none"}
+					onValueChange={(value) =>
+						onClipTransitionChange?.(
+							value === "none"
+								? undefined
+								: {
+										type: value as ClipTransitionType,
+										durationMs:
+											selectedClipTransition?.durationMs ??
+											CLIP_TRANSITION_DEFAULT_MS,
+									},
+						)
+					}
+					className="grid grid-cols-3 gap-2"
+				>
+					<ChoiceItem value="none">{tSettings("clip.transitionNone", "None")}</ChoiceItem>
+					<ChoiceItem value="dip">
+						{tSettings("clip.transitionDip", "Dip to black")}
+					</ChoiceItem>
+					<ChoiceItem value="crossfade">
+						{tSettings("clip.transitionCrossfade", "Cross dissolve")}
+					</ChoiceItem>
+				</ChoiceGroup>
+				{selectedClipTransition && (
+					<>
+						<SliderControl
+							label={tSettings("clip.transitionDuration", "Duration")}
+							value={selectedClipTransition.durationMs / 1000}
+							min={CLIP_TRANSITION_MIN_MS / 1000}
+							max={CLIP_TRANSITION_MAX_MS / 1000}
+							step={0.1}
+							onChange={(value) =>
+								onClipTransitionChange?.({
+									...selectedClipTransition,
+									durationMs: Math.round(value * 1000),
+								})
+							}
+							formatValue={(value) => `${value.toFixed(1)} s`}
+						/>
+						<p className="text-xs text-muted-foreground/70">
+							{tSettings(
+								"clip.transitionHint",
+								"Plays at the end of this clip, with a short audio fade. On the last clip, the video fades out to black.",
+							)}
+						</p>
+					</>
+				)}
 				{hasClipAudioOverrides && onResetClipAudio && (
 					<Button type="button" variant="ghost" onClick={onResetClipAudio}>
 						{tSettings("clip.resetAudioSettings", "Reset audio settings")}

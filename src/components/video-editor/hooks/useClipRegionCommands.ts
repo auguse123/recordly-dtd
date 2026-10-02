@@ -8,6 +8,7 @@ import {
 } from "../clipSequence";
 import { changeClipSpan } from "../clipSpanChange";
 import { planClipSplit } from "../clipSplit";
+import { type ClipTransition, normalizeClipTransition } from "../clipTransitions";
 import { planRangeRemoval, planTrimToPlayhead, type RangeRemovalPlan } from "../editTools";
 import type { ClipSequenceSpan } from "../timeline/core/timelineTypes";
 import type { ClipRegion, EditorEffectSection, ZoomRegion } from "../types";
@@ -176,6 +177,18 @@ export function useClipRegionCommands({
 		},
 		[selectedClipId, setClipRegions],
 	);
+	const handleClipTransitionChange = useCallback(
+		(transition: ClipTransition | undefined) => {
+			if (!selectedClipId) return;
+			const transitionOut = normalizeClipTransition(transition);
+			setClipRegions((current) =>
+				current.map((clip) =>
+					clip.id === selectedClipId ? { ...clip, transitionOut } : clip,
+				),
+			);
+		},
+		[selectedClipId, setClipRegions],
+	);
 	const handleClipShowSourceAudioChange = useCallback(
 		(showSourceAudio: boolean) => {
 			if (!selectedClipId) return;
@@ -244,6 +257,7 @@ export function useClipRegionCommands({
 		handleClipSpanChange,
 		handleClipSpeedChange,
 		handleClipMutedChange,
+		handleClipTransitionChange,
 		handleClipShowSourceAudioChange,
 		handleClipDelete,
 	};

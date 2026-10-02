@@ -24,7 +24,13 @@
 		"mutedState": "Le son est coupé",
 		"unmutedState": "Le son est activé",
 		"separateClipFromAudio": "Séparer le clip de l'audio",
-		"delete": "Supprimer le clip"
+		"delete": "Supprimer le clip",
+		"transition": "Transition de sortie",
+		"transitionNone": "Aucune",
+		"transitionDip": "Fondu au noir",
+		"transitionCrossfade": "Fondu enchaîné",
+		"transitionDuration": "Durée",
+		"transitionHint": "S'applique à la fin de ce clip, avec un court fondu audio. Sur le dernier clip, la vidéo se termine en fondu au noir."
 	},
 	"effects": {
 		"title": "Effets vidéo",

@@ -24,7 +24,13 @@
 		"mutedState": "音频已静音",
 		"unmutedState": "音频正在播放",
 		"separateClipFromAudio": "将剪辑与音频分离",
-		"delete": "删除片段"
+		"delete": "删除片段",
+		"transition": "Transition out",
+		"transitionNone": "None",
+		"transitionDip": "Dip to black",
+		"transitionCrossfade": "Cross dissolve",
+		"transitionDuration": "Duration",
+		"transitionHint": "Plays at the end of this clip, with a short audio fade. On the last clip, the video fades out to black."
 	},
 	"effects": {
 		"title": "视频效果",

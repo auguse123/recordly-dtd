@@ -602,6 +602,7 @@ export class ModernVideoExporter {
 				stageStartedAt = this.getNowMs();
 				this.renderer = new ModernFrameRenderer({
 					timelineEffects: this.config.clipRegions !== undefined,
+					clipRegions: this.config.clipRegions,
 					width: this.config.width,
 					height: this.config.height,
 					preferredRenderBackend: undefined,

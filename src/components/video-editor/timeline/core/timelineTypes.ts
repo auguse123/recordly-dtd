@@ -1,5 +1,6 @@
 import type { Span } from "dnd-timeline";
 import type { ShortcutBinding } from "@/lib/shortcuts";
+import type { ClipTransitionType } from "../../clipTransitions";
 import type { ZoomMode } from "../../types";
 
 export interface ClipSequenceSpan extends Span {
@@ -46,6 +47,7 @@ export interface TimelineRenderItem {
 	speedValue?: number;
 	showSourceAudio?: boolean;
 	muted?: boolean;
+	transitionOut?: ClipTransitionType;
 	variant: "zoom" | "trim" | "clip" | "annotation" | "speed" | "audio" | "caption";
 }
 

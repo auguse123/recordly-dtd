@@ -1,3 +1,4 @@
+import { type GainPoint, getGainAt } from "@/components/video-editor/clipTransitions";
 import type { SpeedRegion } from "@/components/video-editor/types";
 import { AudioProcessorBase } from "./audioProcessorBase";
 import type { TimelineSlice, TrimLikeRegion } from "./audioProcessorShared";
@@ -82,6 +83,7 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
 		chunkOutputStartSec = 0,
 		chunkDurationSec = Number.POSITIVE_INFINITY,
 		mutedOutputRangesSec: Array<{ startSec: number; endSec: number }> = [],
+		gainEnvelope: GainPoint[] = [],
 	): void {
 		let outputOffsetSec = 0;
 
@@ -180,7 +182,8 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
 				}
 				const source = ctx.createBufferSource();
 				const gainNode = ctx.createGain();
-				gainNode.gain.value = Math.max(0, Math.min(2, gain));
+				const baseGain = Math.max(0, Math.min(2, gain));
+				gainNode.gain.value = baseGain;
 
 				const sourceOffsetSec =
 					effectiveBufferStartSec +
@@ -203,6 +206,14 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
 				source.connect(gainNode);
 				gainNode.connect(ctx.destination);
 
+				applyGainEnvelope(
+					gainNode.gain,
+					baseGain,
+					gainEnvelope,
+					audibleRange.startSec,
+					audibleRange.endSec,
+					chunkOutputStartSec,
+				);
 				source.start(localStartSec);
 			}
 
@@ -353,4 +364,30 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
 	}
 
 	// Create a WAV file header for the given audio parameters.
+}
+
+/**
+ * Automate `param` along a piecewise-linear gain curve (output ms) over the
+ * output range [startSec, endSec], scheduled in chunk-local time.
+ */
+function applyGainEnvelope(
+	param: AudioParam,
+	baseGain: number,
+	envelope: readonly GainPoint[],
+	startSec: number,
+	endSec: number,
+	chunkOutputStartSec: number,
+): void {
+	if (envelope.length === 0) return;
+	const startMs = startSec * 1000;
+	const endMs = endSec * 1000;
+	const inside = envelope.filter((point) => point.timeMs > startMs && point.timeMs < endMs);
+	const startGain = getGainAt(envelope, startMs);
+	if (inside.length === 0 && startGain === 1 && getGainAt(envelope, endMs) === 1) return;
+	const toLocal = (ms: number) => Math.max(0, ms / 1000 - chunkOutputStartSec);
+	param.setValueAtTime(baseGain * startGain, toLocal(startMs));
+	for (const point of inside) {
+		param.linearRampToValueAtTime(baseGain * point.gain, toLocal(point.timeMs));
+	}
+	param.linearRampToValueAtTime(baseGain * getGainAt(envelope, endMs), toLocal(endMs));
 }

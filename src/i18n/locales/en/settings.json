@@ -30,7 +30,13 @@
 		"mutedState": "Audio is muted",
 		"unmutedState": "Audio is playing",
 		"separateClipFromAudio": "Separate clip from audio",
-		"delete": "Delete Clip"
+		"delete": "Delete Clip",
+		"transition": "Transition out",
+		"transitionNone": "None",
+		"transitionDip": "Dip to black",
+		"transitionCrossfade": "Cross dissolve",
+		"transitionDuration": "Duration",
+		"transitionHint": "Plays at the end of this clip, with a short audio fade. On the last clip, the video fades out to black."
 	},
 	"effects": {
 		"title": "Video Effects",

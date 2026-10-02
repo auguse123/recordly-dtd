@@ -1,4 +1,8 @@
 import { SOURCE_AUDIO_NORMALIZE_GAIN } from "@/components/video-editor/audio/audioTypes";
+import {
+	getTransitionGainEnvelope,
+	resolveClipTransitions,
+} from "@/components/video-editor/clipTransitions";
 import type {
 	AudioRegion,
 	ClipRegion,
@@ -201,6 +205,9 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			companionEntries,
 			regionEntries,
 			mutedSourceOutputRangesSec,
+			sourceGainEnvelope: clipRegions
+				? getTransitionGainEnvelope(resolveClipTransitions(clipRegions))
+				: [],
 			slices,
 			outputDurationMs,
 			numChannels,
@@ -336,6 +343,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					outputOffsetSec,
 					chunkSec,
 					prepared.mutedSourceOutputRangesSec,
+					prepared.sourceGainEnvelope,
 				);
 			}
 
@@ -350,6 +358,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					outputOffsetSec,
 					chunkSec,
 					prepared.mutedSourceOutputRangesSec,
+					prepared.sourceGainEnvelope,
 				);
 			}
 

@@ -13,6 +13,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatClipSpeedLabel } from "../clipSpeedChange";
+import type { ClipTransitionType } from "../clipTransitions";
 import { ClipFilmstrip } from "./components/filmstrip/ClipFilmstrip";
 import AudioWaveform from "./components/waveform/AudioWaveform";
 import {
@@ -52,6 +53,8 @@ interface ItemProps {
 	waveformGain?: number;
 	waveformNormalize?: boolean;
 	muted?: boolean;
+	/** Clip only: transition played at its end. */
+	transitionOut?: ClipTransitionType;
 	variant?: "zoom" | "trim" | "clip" | "annotation" | "speed" | "audio" | "caption";
 	isLoading?: boolean;
 	loadingLabel?: string;
@@ -91,6 +94,7 @@ export default function Item({
 	waveformGain = 1,
 	waveformNormalize = false,
 	muted = false,
+	transitionOut,
 	variant = "zoom",
 	isLoading = false,
 	loadingLabel,
@@ -365,6 +369,18 @@ export default function Item({
 							gain={waveformGain}
 							normalize={waveformNormalize}
 							className="absolute inset-0 w-full h-full pointer-events-none opacity-45"
+						/>
+					)}
+					{isClip && transitionOut && (
+						<div
+							aria-hidden="true"
+							title={transitionOut === "dip" ? "Dip to black" : "Cross dissolve"}
+							className={cn(
+								"pointer-events-none absolute top-0 right-0 bottom-0 z-[15] w-3 rounded-r",
+								transitionOut === "dip"
+									? "bg-gradient-to-r from-transparent to-black/80"
+									: "bg-gradient-to-r from-transparent to-sky-300/70",
+							)}
 						/>
 					)}
 					{/* Muted overlay for source audio track items */}

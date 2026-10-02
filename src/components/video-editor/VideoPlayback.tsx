@@ -42,6 +42,7 @@ import {
 	getCaptionTextMaxWidth,
 	getCaptionWordVisualState,
 } from "./captionStyle";
+import { getTransitionFrameState, resolveClipTransitions } from "./clipTransitions";
 import {
 	type AnnotationRegion,
 	type AutoCaptionSettings,
@@ -112,17 +113,18 @@ import {
 import { updateOverlayIndicator } from "./videoPlayback/overlayUtils";
 import { supportsPreviewPlaybackRate } from "./videoPlayback/playbackRate";
 import { PreviewVideoSource } from "./videoPlayback/previewVideoSource";
-import { usePreviewVideoReady } from "./videoPlayback/usePreviewVideoReady";
 import { getSceneEffectMetrics } from "./videoPlayback/sceneEffects";
 import {
 	resolvePreviewMotionMode,
 	resolveSceneZoomTarget,
 	shouldComposePreviewFrame,
 } from "./videoPlayback/sceneMotion";
+import { TransitionFreezeFrame } from "./videoPlayback/transitionFreezeFrame";
+import { usePreviewVideoReady } from "./videoPlayback/usePreviewVideoReady";
 import {
 	getWebcamMediaTargetTimeSeconds,
-	isWebcamVisibleAtSourceTime,
 	isWebcamMediaSynchronized,
+	isWebcamVisibleAtSourceTime,
 	shouldSeekWebcamMedia,
 } from "./videoPlayback/webcamSync";
 import {
@@ -443,6 +445,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			clipRegionsRef.current = clipRegions;
 			clipPlaybackRef.current?.refresh();
 		}, [clipRegions]);
+		const clipTransitions = useMemo(() => resolveClipTransitions(clipRegions), [clipRegions]);
+		const clipTransitionsRef = useRef(clipTransitions);
+		clipTransitionsRef.current = clipTransitions;
+		const freezeFrameRef = useRef<TransitionFreezeFrame | null>(null);
+		const transitionShadeRef = useRef<HTMLDivElement | null>(null);
 		const zoomRegionsRef = useRef<ZoomRegion[]>([]);
 		const selectedZoomIdRef = useRef<string | null>(null);
 		const animationStateRef = useRef<PlaybackAnimationState>(createPlaybackAnimationState());
@@ -1890,8 +1897,17 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			const videoSprite = new Sprite(videoTexture);
 			videoSpriteRef.current = videoSprite;
 
+			// Last frame of the outgoing clip, dissolved over the next one by crossfades.
+			const freezeFrame = new TransitionFreezeFrame();
+			freezeFrameRef.current = freezeFrame;
+			const captureFreezeFrame = (seamMs: number | null) => {
+				if (seamMs === null || video.videoWidth === 0) return;
+				freezeFrame.capture(video, video.videoWidth, video.videoHeight, seamMs);
+			};
+
 			const maskGraphics = new Graphics();
 			videoContainer.addChild(videoSprite);
+			videoContainer.addChild(freezeFrame.sprite);
 			cameraContainer.addChild(maskGraphics);
 			videoEffectsContainer.mask = maskGraphics;
 			maskGraphicsRef.current = maskGraphics;
@@ -1910,6 +1926,15 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				getClips: () => clipRegionsRef.current,
 				onSourceSeek: (reason) => {
 					preserveCameraAcrossCut = reason === "cut";
+					// The element still shows the outgoing clip's last frame here.
+					if (reason === "cut") {
+						captureFreezeFrame(
+							TransitionFreezeFrame.findCutSeam(
+								clipTransitionsRef.current,
+								timelineTimeRef.current * 1000,
+							),
+						);
+					}
 				},
 				onTime: (time, source) => {
 					timelineTimeRef.current = time;
@@ -1953,6 +1978,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				videoContainer.mask = null;
 				destroyPixiContainer(videoSprite);
 				destroyPixiContainer(maskGraphics);
+				freezeFrame.destroy();
+				freezeFrameRef.current = null;
 				maskGraphicsRef.current = null;
 				if (!videoTexture.destroyed) videoTexture.destroy(false);
 				previewVideoSourceRef.current.suspend();
@@ -2129,6 +2156,37 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				applyTransform({ scale: appliedScale, x: appliedX, y: appliedY }, target.focus);
 
 				applyWebcamBubbleLayout(animationStateRef.current.appliedScale || 1);
+
+				const transitions = clipTransitionsRef.current;
+				const freezeFrame = freezeFrameRef.current;
+				const shade = transitionShadeRef.current;
+				if (transitions.length === 0) {
+					freezeFrame?.hide();
+					if (shade) shade.style.opacity = "0";
+				} else {
+					const video = videoRef.current;
+					const captureSeam = TransitionFreezeFrame.findCaptureSeam(
+						transitions,
+						contentTimeMs,
+					);
+					if (
+						freezeFrame &&
+						video &&
+						captureSeam !== null &&
+						!video.seeking &&
+						video.videoWidth > 0
+					) {
+						freezeFrame.capture(
+							video,
+							video.videoWidth,
+							video.videoHeight,
+							captureSeam,
+						);
+					}
+					const transitionState = getTransitionFrameState(transitions, contentTimeMs);
+					freezeFrame?.apply(transitionState, videoSpriteRef.current);
+					if (shade) shade.style.opacity = String(transitionState.blackAlpha);
+				}
 
 				const timeMs = currentTimeRef.current;
 				const cursorOverlay = cursorOverlayRef.current;
@@ -2798,6 +2856,13 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 						</div>
 					</div>
 				)}
+				{/* Dip-to-black transitions; the ticker drives its opacity. */}
+				<div
+					ref={transitionShadeRef}
+					className="pointer-events-none absolute inset-0 z-[100] bg-black"
+					style={{ opacity: 0 }}
+					aria-hidden="true"
+				/>
 				{/* Keep the source video off-screen instead of display:none so the
 					browser continues producing presented frames for Pixi and preview sync. */}
 				<video

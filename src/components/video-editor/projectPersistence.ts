@@ -14,6 +14,7 @@ import { getLocalMediaServerPath } from "@/lib/localMediaUrl";
 import { DEFAULT_WALLPAPER_PATH } from "@/lib/wallpapers";
 import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/aspectRatioUtils";
 import { closeClipGaps, rippleRegionAnchors, rippleRegions } from "./clipSequence";
+import { normalizeClipTransition } from "./clipTransitions";
 import { CURSOR_MOTION_PRESETS, resolveCursorMotionPresetId } from "./cursorMotionPresets";
 import { type IntroOutroSettings, normalizeIntroOutroSettings } from "./introOutro";
 import {
@@ -519,6 +520,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 							typeof region.showSourceAudio === "boolean"
 								? region.showSourceAudio
 								: false,
+						transitionOut: normalizeClipTransition(region.transitionOut),
 					};
 				})
 		: [];
