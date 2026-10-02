@@ -162,7 +162,8 @@
 		"webcam": "Webcam",
 		"frame": "Cadre",
 		"crop": "Recadrage",
-		"introOutro": "Début / Fin"
+		"introOutro": "Début / Fin",
+		"voice": "Voix"
 	},
 	"captions": {
 		"selectOnTimeline": "Sélectionnez un sous-titre sur la timeline pour le modifier.",
@@ -291,5 +292,26 @@
 		"timelineIntro": "Début",
 		"timelineOutro": "Fin",
 		"timelineAdd": "Ajouter"
+	},
+	"voice": {
+		"heading": "Voix",
+		"intro": "Traitez la voix dans un autre outil (Audition, Adobe Podcast, iZotope…), puis réimportez-la. Coupes et synchro sont conservées.",
+		"noTrack": "Cet enregistrement n'a pas de piste micro séparée. Enregistrez avec le micro activé pour utiliser ces outils.",
+		"step1": "1. Exporter la voix brute",
+		"exportHint": "Enregistrement complet, avant nettoyage, en WAV.",
+		"exportHintDuration": "Enregistrement complet ({{duration}}), avant nettoyage, en WAV.",
+		"export": "Exporter la voix brute (WAV)",
+		"exporting": "Export…",
+		"exported": "Voix brute exportée (WAV).",
+		"step2": "2. Importer la voix traitée",
+		"importHint": "Même durée que le fichier exporté. Elle remplace la voix de tous les projets qui utilisent cet enregistrement.",
+		"import": "Importer la voix traitée…",
+		"importing": "Import…",
+		"imported": "Voix traitée importée. L'aperçu et les exports l'utilisent maintenant.",
+		"durationMismatch": "Ce fichier dure {{actual}} mais l'enregistrement dure {{expected}}. Traitez la voix brute complète exportée ici, sans la couper.",
+		"restore": "Revenir à la voix précédente",
+		"restoring": "Restauration…",
+		"restored": "Voix précédente restaurée.",
+		"failed": "Problème avec la piste voix."
 	}
 }

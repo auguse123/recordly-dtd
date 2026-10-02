@@ -611,6 +611,41 @@ interface Window {
 			folder?: string;
 			error?: string;
 		}>;
+		generateSeparateTracks: (payload: {
+			videoPath: string;
+			voiceWavPath?: string | null;
+			introSec: number;
+		}) => Promise<{
+			success: boolean;
+			folder?: string;
+			hasFullAudio?: boolean;
+			hasVoice?: boolean;
+			error?: string;
+		}>;
+		getVoiceTrackInfo: (micPath: string) => Promise<{
+			success: boolean;
+			micPath?: string;
+			rawPath?: string;
+			hasImported?: boolean;
+			durationSec?: number | null;
+			error?: string;
+		}>;
+		exportRawVoice: (micPath: string) => Promise<{
+			success: boolean;
+			path?: string;
+			canceled?: boolean;
+			error?: string;
+		}>;
+		importProcessedVoice: (micPath: string) => Promise<{
+			success: boolean;
+			canceled?: boolean;
+			durationMismatch?: { expectedSec: number; actualSec: number };
+			error?: string;
+		}>;
+		restoreVoiceBeforeImport: (micPath: string) => Promise<{
+			success: boolean;
+			error?: string;
+		}>;
 		getVideoAudioFallbackPaths: (videoPath: string) => Promise<{
 			success: boolean;
 			paths: string[];

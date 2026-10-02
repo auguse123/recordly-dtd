@@ -86,6 +86,7 @@ import {
 	DEFAULT_ZOOM_IN_DURATION_MS,
 	DEFAULT_ZOOM_OUT_DURATION_MS,
 } from "./types";
+import { VoiceTrackPanel } from "./VoiceTrackPanel";
 import { fromCursorSwaySliderValue, toCursorSwaySliderValue } from "./videoPlayback/cursorSway";
 import { isZeroPadding } from "./videoPlayback/layoutUtils";
 import { getPreviewPlaybackRateRange } from "./videoPlayback/playbackRate";
@@ -423,6 +424,8 @@ interface SettingsPanelProps {
 	advanced?: boolean;
 	introOutro?: IntroOutroSettings;
 	onIntroOutroChange?: (settings: IntroOutroSettings) => void;
+	voiceMicPath?: string | null;
+	onVoiceTrackChanged?: () => void;
 	previewAspectRatio?: number;
 	panelMode?: "editor" | "background";
 	activeEffectSection?: EditorEffectSection;
@@ -883,6 +886,8 @@ export function SettingsPanel({
 	advanced = false,
 	introOutro,
 	onIntroOutroChange,
+	voiceMicPath,
+	onVoiceTrackChanged,
 	previewAspectRatio = 16 / 9,
 	panelMode = "editor",
 	activeEffectSection: activeEffectSectionProp,
@@ -2798,6 +2803,13 @@ export function SettingsPanel({
 						aspectRatio={previewAspectRatio}
 					/>
 				) : null;
+			case "voice":
+				return (
+					<VoiceTrackPanel
+						micPath={voiceMicPath ?? null}
+						onVoiceChanged={() => onVoiceTrackChanged?.()}
+					/>
+				);
 			case "cursor":
 				return (
 					<section className="flex flex-col gap-4">

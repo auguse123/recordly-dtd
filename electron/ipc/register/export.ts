@@ -1,5 +1,6 @@
 import type { ChildProcessByStdio } from "node:child_process";
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Readable, Writable } from "node:stream";
@@ -16,9 +17,9 @@ import {
 import { type IntroOutroSegmentInput, joinIntroOutro } from "../export/introOutro";
 import {
 	getIntroOutroMediaType,
-	importIntroOutroMedia,
 	INTRO_OUTRO_IMAGE_EXTENSIONS,
 	INTRO_OUTRO_VIDEO_EXTENSIONS,
+	importIntroOutroMedia,
 	probeIntroOutroVideo,
 	resolveOwnedIntroOutroMedia,
 } from "../export/introOutroMedia";
@@ -45,7 +46,18 @@ import {
 	sendNativeVideoExportWriteFrameResult,
 	settleNativeVideoExportWriteFrameRequest,
 } from "../export/native-video";
+import { generateSeparateTracks } from "../export/separateTracks";
 import { generateShareKit } from "../export/shareKit";
+import {
+	exportRawVoiceWav,
+	getVoiceTrackInfo,
+	getVoiceTrackPaths,
+	importProcessedVoice,
+	isVoiceTrackSidecarPath,
+	restoreVoiceBeforeImport,
+	VOICE_IMPORT_EXTENSIONS,
+	VoiceDurationMismatchError,
+} from "../export/voiceTrack";
 import { getFfmpegBinaryPath } from "../ffmpeg/binary";
 import {
 	buildNativeH264StreamExportArgs,
@@ -54,7 +66,11 @@ import {
 	type NativeExportEncodingMode,
 	type NativeVideoExportFinishOptions,
 } from "../nativeVideoExport";
-import { isAllowedLocalReadPath, resolveApprovedLocalMediaPath } from "../project/manager";
+import {
+	isAllowedLocalReadPath,
+	rememberApprovedLocalReadPath,
+	resolveApprovedLocalMediaPath,
+} from "../project/manager";
 import { approvedLocalReadPaths, approvedLocalReadRoots } from "../state";
 import { approveUserPath } from "../utils";
 import {
@@ -1105,6 +1121,169 @@ export function registerExportHandlers() {
 		}
 	});
 
+	ipcMain.handle(
+		"generate-separate-tracks",
+		async (
+			_event,
+			payload: { videoPath?: unknown; voiceWavPath?: unknown; introSec?: unknown },
+		) => {
+			const videoPath = payload?.videoPath;
+			if (typeof videoPath !== "string" || path.extname(videoPath).toLowerCase() !== ".mp4") {
+				return { success: false, error: "Les pistes séparées nécessitent un export MP4." };
+			}
+			const resolved = path.resolve(videoPath);
+			if (!approvedLocalReadPaths.has(resolved)) {
+				return { success: false, error: "Exported file is not an approved path" };
+			}
+			const voiceWavPath = payload.voiceWavPath;
+			if (
+				voiceWavPath != null &&
+				(typeof voiceWavPath !== "string" ||
+					!isTempPathSafe(voiceWavPath) ||
+					!isOwnedExportPath(voiceWavPath))
+			) {
+				return { success: false, error: "Voice track is not an app-managed export temp" };
+			}
+			const introSec =
+				typeof payload.introSec === "number" && Number.isFinite(payload.introSec)
+					? Math.max(0, payload.introSec)
+					: 0;
+			try {
+				const tracks = await generateSeparateTracks({
+					ffmpegPath: getFfmpegBinaryPath(),
+					videoPath: resolved,
+					voiceWavPath: typeof voiceWavPath === "string" ? voiceWavPath : null,
+					introSec,
+				});
+				shell.showItemInFolder(tracks.video);
+				return {
+					success: true,
+					folder: tracks.folder,
+					hasFullAudio: tracks.hasFullAudio,
+					hasVoice: tracks.hasVoice,
+				};
+			} catch (error) {
+				console.error("Failed to generate separate tracks:", error);
+				return { success: false, error: String(error) };
+			} finally {
+				if (typeof voiceWavPath === "string") {
+					await removeTemporaryExportFile(voiceWavPath).catch(() => undefined);
+					releaseOwnedExportPath(voiceWavPath);
+				}
+			}
+		},
+	);
+
+	// Voice sidecar tools: the renderer only ever names the live `<stem>.mic.m4a`
+	// it already plays; backups are derived here and never accepted from outside.
+	const resolveVoiceSidecar = (micPath: unknown): string | null => {
+		if (typeof micPath !== "string" || !isVoiceTrackSidecarPath(micPath)) return null;
+		const resolved = path.resolve(micPath);
+		if (!isAllowedLocalReadPath(resolved) || !existsSync(resolved)) return null;
+		return resolved;
+	};
+
+	ipcMain.handle("get-voice-track-info", async (_event, micPath: unknown) => {
+		const resolved = resolveVoiceSidecar(micPath);
+		if (!resolved) return { success: false, error: "No voice track for this recording" };
+		try {
+			const info = await getVoiceTrackInfo(getFfmpegBinaryPath(), resolved);
+			await rememberApprovedLocalReadPath(info.rawPath);
+			return { success: true, ...info };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("export-raw-voice", async (event, micPath: unknown) => {
+		const resolved = resolveVoiceSidecar(micPath);
+		if (!resolved) return { success: false, error: "No voice track for this recording" };
+		try {
+			const parentWindow = BrowserWindow.fromWebContents(event.sender);
+			const options: SaveDialogOptions = {
+				title: "Exporter la voix brute",
+				defaultPath: path.join(
+					app.getPath("desktop"),
+					`${getVoiceTrackPaths(resolved).baseName} - voix brute complète.wav`,
+				),
+				filters: [{ name: "WAV", extensions: ["wav"] }],
+			};
+			const result = parentWindow
+				? await dialog.showSaveDialog(parentWindow, options)
+				: await dialog.showSaveDialog(options);
+			if (result.canceled || !result.filePath) {
+				return { success: false, canceled: true };
+			}
+			await exportRawVoiceWav({
+				ffmpegPath: getFfmpegBinaryPath(),
+				micPath: resolved,
+				outputPath: result.filePath,
+			});
+			shell.showItemInFolder(result.filePath);
+			return { success: true, path: result.filePath };
+		} catch (error) {
+			console.error("Failed to export raw voice:", error);
+			return { success: false, error: String(error) };
+		}
+	});
+
+	ipcMain.handle("import-processed-voice", async (event, micPath: unknown) => {
+		const resolved = resolveVoiceSidecar(micPath);
+		if (!resolved) return { success: false, error: "No voice track for this recording" };
+		let workDir: string | null = null;
+		try {
+			const parentWindow = BrowserWindow.fromWebContents(event.sender);
+			const options = {
+				title: "Importer la voix traitée",
+				filters: [{ name: "Audio", extensions: VOICE_IMPORT_EXTENSIONS }],
+				properties: ["openFile" as const],
+			};
+			const result = parentWindow
+				? await dialog.showOpenDialog(parentWindow, options)
+				: await dialog.showOpenDialog(options);
+			const sourcePath = result.filePaths[0];
+			if (result.canceled || !sourcePath) {
+				return { success: false, canceled: true };
+			}
+			workDir = await fs.mkdtemp(path.join(app.getPath("temp"), "recordly-voice-import-"));
+			await importProcessedVoice({
+				ffmpegPath: getFfmpegBinaryPath(),
+				micPath: resolved,
+				sourcePath,
+				workDir,
+			});
+			return { success: true };
+		} catch (error) {
+			if (error instanceof VoiceDurationMismatchError) {
+				return {
+					success: false,
+					durationMismatch: {
+						expectedSec: error.expectedSec,
+						actualSec: error.actualSec,
+					},
+					error: error.message,
+				};
+			}
+			console.error("Failed to import processed voice:", error);
+			return { success: false, error: String(error) };
+		} finally {
+			if (workDir) {
+				await fs.rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+			}
+		}
+	});
+
+	ipcMain.handle("restore-voice-before-import", async (_event, micPath: unknown) => {
+		const resolved = resolveVoiceSidecar(micPath);
+		if (!resolved) return { success: false, error: "No voice track for this recording" };
+		try {
+			await restoreVoiceBeforeImport(resolved);
+			return { success: true };
+		} catch (error) {
+			return { success: false, error: String(error) };
+		}
+	});
+
 	const introOutroMediaDir = path.join(app.getPath("userData"), "intro-outro-media");
 	void fs
 		.mkdir(introOutroMediaDir, { recursive: true })
@@ -1120,7 +1299,10 @@ export function registerExportHandlers() {
 				filters: [
 					{
 						name: "Images & videos",
-						extensions: [...INTRO_OUTRO_IMAGE_EXTENSIONS, ...INTRO_OUTRO_VIDEO_EXTENSIONS],
+						extensions: [
+							...INTRO_OUTRO_IMAGE_EXTENSIONS,
+							...INTRO_OUTRO_VIDEO_EXTENSIONS,
+						],
 					},
 				],
 				properties: ["openFile" as const],
@@ -1143,7 +1325,10 @@ export function registerExportHandlers() {
 			return { success: true, media };
 		} catch (error) {
 			console.error("Failed to import intro/outro media:", error);
-			return { success: false, error: error instanceof Error ? error.message : String(error) };
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : String(error),
+			};
 		}
 	});
 
@@ -1164,7 +1349,10 @@ export function registerExportHandlers() {
 			return { kind: "still", png: segment.png, durationSec };
 		}
 		if (segment.kind === "video") {
-			const mediaPath = await resolveOwnedIntroOutroMedia(introOutroMediaDir, segment.mediaPath);
+			const mediaPath = await resolveOwnedIntroOutroMedia(
+				introOutroMediaDir,
+				segment.mediaPath,
+			);
 			if (!mediaPath || getIntroOutroMediaType(mediaPath) !== "video") {
 				throw new Error("Intro/outro video not found — choose it again");
 			}
@@ -1218,7 +1406,10 @@ export function registerExportHandlers() {
 				if (workDir) {
 					await fs.rm(workDir, { recursive: true, force: true }).catch(() => undefined);
 				}
-				return { success: false, error: error instanceof Error ? error.message : String(error) };
+				return {
+					success: false,
+					error: error instanceof Error ? error.message : String(error),
+				};
 			}
 		},
 	);

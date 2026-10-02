@@ -30,6 +30,9 @@ import {
 import type { VideoMuxer } from "./muxer";
 
 export class OfflineAudioProcessor extends AudioMediaProcessor {
+	/** Render sidecar tracks only, leaving out the audio muxed into the video. */
+	protected skipEmbeddedSourceAudio = false;
+
 	protected async renderAndMuxOfflineAudio(
 		videoUrl: string,
 		trimRegions: TrimLikeRegion[],
@@ -91,9 +94,10 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 		});
 
 		// Decode embedded source audio separately from companion sidecars.
-		const mainBuffer = resolvedPlan.includeEmbeddedInExport
-			? await this.decodeAudioFromUrl(videoUrl)
-			: null;
+		const mainBuffer =
+			resolvedPlan.includeEmbeddedInExport && !this.skipEmbeddedSourceAudio
+				? await this.decodeAudioFromUrl(videoUrl)
+				: null;
 		const mainBufferGain = resolveSourceTrackGain(sourceAudioTrackSettings, "mixed");
 		const mainBufferEntry = mainBuffer ? { buffer: mainBuffer, gain: mainBufferGain } : null;
 		if (this.cancelled) throw new Error("Export cancelled");

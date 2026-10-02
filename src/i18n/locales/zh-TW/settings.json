@@ -162,7 +162,8 @@
 		"webcam": "網路攝影機",
 		"frame": "外框",
 		"crop": "裁切",
-		"introOutro": "Intro / Outro"
+		"introOutro": "Intro / Outro",
+		"voice": "Voice"
 	},
 	"captions": {
 		"selectOnTimeline": "在時間軸上選擇字幕進行編輯。",
@@ -291,5 +292,26 @@
 		"timelineIntro": "Intro",
 		"timelineOutro": "Outro",
 		"timelineAdd": "Add"
+	},
+	"voice": {
+		"heading": "Voice",
+		"intro": "Process the voice in another tool (Audition, Adobe Podcast, iZotope…), then bring it back. Cuts and sync are kept.",
+		"noTrack": "This recording has no separate microphone track. Record with the microphone on to use these tools.",
+		"step1": "1. Export the raw voice",
+		"exportHint": "Full recording, before clean-up, as WAV.",
+		"exportHintDuration": "Full recording ({{duration}}), before clean-up, as WAV.",
+		"export": "Export raw voice (WAV)",
+		"exporting": "Exporting…",
+		"exported": "Raw voice exported (WAV).",
+		"step2": "2. Import the processed voice",
+		"importHint": "Same length as the exported file. It replaces the voice for every project using this recording.",
+		"import": "Import processed voice…",
+		"importing": "Importing…",
+		"imported": "Processed voice imported. The preview and exports now use it.",
+		"durationMismatch": "This file lasts {{actual}} but the recording lasts {{expected}}. Process the full raw voice exported here, without cutting it.",
+		"restore": "Back to the previous voice",
+		"restoring": "Restoring…",
+		"restored": "Previous voice restored.",
+		"failed": "Something went wrong with the voice track."
 	}
 }

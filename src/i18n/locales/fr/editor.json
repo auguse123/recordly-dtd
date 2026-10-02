@@ -221,5 +221,12 @@
 		"busy": "Création du kit…",
 		"done": "Kit prêt : vidéo, aperçu GIF et vignette.",
 		"failed": "Impossible de créer le kit de partage."
+	},
+	"separateTracks": {
+		"create": "Pistes séparées (vidéo + WAV)",
+		"busy": "Création des pistes…",
+		"done": "Pistes prêtes : vidéo sans son, son complet et voix brute (WAV).",
+		"doneNoVoice": "Pistes prêtes : vidéo sans son et son complet (WAV).",
+		"failed": "Impossible de créer les pistes séparées."
 	}
 }

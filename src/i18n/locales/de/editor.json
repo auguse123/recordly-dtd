@@ -221,5 +221,12 @@
 		"busy": "Creating share kit…",
 		"done": "Share kit ready: video, GIF preview and thumbnail.",
 		"failed": "Could not create the share kit."
+	},
+	"separateTracks": {
+		"create": "Separate tracks (video + WAV)",
+		"busy": "Creating separate tracks…",
+		"done": "Separate tracks ready: silent video, full sound and raw voice (WAV).",
+		"doneNoVoice": "Separate tracks ready: silent video and full sound (WAV).",
+		"failed": "Could not create the separate tracks."
 	}
 }

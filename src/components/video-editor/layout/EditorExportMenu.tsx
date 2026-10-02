@@ -7,6 +7,7 @@ import { toast } from "@/components/ui/toast";
 import type { useI18n } from "@/contexts/I18nContext";
 import { CloudShareButton } from "../cloud/CloudShareButton";
 import { ExportSettingsMenu } from "../ExportSettingsMenu";
+import { createSeparateTracks } from "../export/separateTracks";
 import type { useExportDimensions } from "../export/useExportDimensions";
 import type { useExportSession } from "../export/useExportSession";
 import type { useExportSettings } from "../export/useExportSettings";
@@ -40,6 +41,7 @@ type Props = {
 export function EditorExportMenu(props: Props) {
 	const [shareOpen, setShareOpen] = useState(false);
 	const [shareKitBusy, setShareKitBusy] = useState(false);
+	const [separateTracksBusy, setSeparateTracksBusy] = useState(false);
 	useEffect(() => {
 		if (props.shareRequestNonce > 0) setShareOpen(true);
 	}, [props.shareRequestNonce]);
@@ -326,6 +328,62 @@ export function EditorExportMenu(props: Props) {
 										: t(
 												"editor.shareKit.create",
 												"Share kit (WhatsApp / email)",
+											)}
+								</Button>
+							) : null}
+							{/\.mp4$/i.test(exportedFilePath) ? (
+								<Button
+									type="button"
+									variant="secondary"
+									disabled={separateTracksBusy}
+									onClick={async () => {
+										setSeparateTracksBusy(true);
+										try {
+											const result =
+												await createSeparateTracks(exportedFilePath);
+											if (result.success) {
+												toast.success(
+													result.hasVoice
+														? t(
+																"editor.separateTracks.done",
+																"Separate tracks ready: silent video, full sound and raw voice (WAV).",
+															)
+														: t(
+																"editor.separateTracks.doneNoVoice",
+																"Separate tracks ready: silent video and full sound (WAV).",
+															),
+												);
+											} else {
+												toast.error(
+													result.error ||
+														t(
+															"editor.separateTracks.failed",
+															"Could not create the separate tracks.",
+														),
+												);
+											}
+										} catch (error) {
+											console.error("Separate tracks failed:", error);
+											toast.error(
+												t(
+													"editor.separateTracks.failed",
+													"Could not create the separate tracks.",
+												),
+											);
+										} finally {
+											setSeparateTracksBusy(false);
+										}
+									}}
+									className="mt-2 h-8 w-full text-xs"
+								>
+									{separateTracksBusy
+										? t(
+												"editor.separateTracks.busy",
+												"Creating separate tracks…",
+											)
+										: t(
+												"editor.separateTracks.create",
+												"Separate tracks (video + WAV)",
 											)}
 								</Button>
 							) : null}

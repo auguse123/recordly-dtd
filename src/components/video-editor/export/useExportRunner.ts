@@ -20,6 +20,7 @@ import {
 	showExportErrorToast,
 	useExportSuccessToast,
 } from "./exportRunnerSupport";
+import { rememberSeparateTracksContext } from "./separateTracks";
 
 export function useExportRunner(input: ExportRunnerInput) {
 	const inputRef = useRef(input);
@@ -340,6 +341,18 @@ export function useExportRunner(input: ExportRunnerInput) {
 					exporterRef.current = exporter;
 					const renderedResult = await exporter.export();
 					if (exportWasCancelled()) return;
+					if (renderedResult.success) {
+						rememberSeparateTracksContext({
+							videoUrl: videoPath,
+							trimRegions: exporterConfig.trimRegions,
+							speedRegions: exporterConfig.speedRegions,
+							clipRegions,
+							sourceAudioFallbackPaths: audio.sourceAudioFallbackPaths,
+							sourceAudioFallbackStartDelayMsByPath:
+								audio.sourceAudioFallbackStartDelayMsByPath,
+							introOutro: exportSettings.introOutro,
+						});
+					}
 					const result = await applyIntroOutroToExport(
 						renderedResult,
 						exportSettings.introOutro,

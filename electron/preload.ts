@@ -523,6 +523,25 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	generateShareKit: (videoPath: string) => {
 		return ipcRenderer.invoke("generate-share-kit", videoPath);
 	},
+	generateSeparateTracks: (payload: {
+		videoPath: string;
+		voiceWavPath?: string | null;
+		introSec: number;
+	}) => {
+		return ipcRenderer.invoke("generate-separate-tracks", payload);
+	},
+	getVoiceTrackInfo: (micPath: string) => {
+		return ipcRenderer.invoke("get-voice-track-info", micPath);
+	},
+	exportRawVoice: (micPath: string) => {
+		return ipcRenderer.invoke("export-raw-voice", micPath);
+	},
+	importProcessedVoice: (micPath: string) => {
+		return ipcRenderer.invoke("import-processed-voice", micPath);
+	},
+	restoreVoiceBeforeImport: (micPath: string) => {
+		return ipcRenderer.invoke("restore-voice-before-import", micPath);
+	},
 	getVideoAudioFallbackPaths: (videoPath: string) => {
 		return ipcRenderer.invoke("get-video-audio-fallback-paths", videoPath);
 	},

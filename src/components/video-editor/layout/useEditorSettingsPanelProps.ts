@@ -2,6 +2,7 @@ import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
 import { useClipAudioReset } from "../audio/useClipAudioReset";
 import type { useAutoCaptionController } from "../captions/useAutoCaptionController";
+import { findMicSidecarPath } from "../export/separateTracks";
 import type { useAnnotationRegionCommands } from "../hooks/useAnnotationRegionCommands";
 import type { useAudioRegionCommands } from "../hooks/useAudioRegionCommands";
 import type { useCaptionCommands } from "../hooks/useCaptionCommands";
@@ -41,6 +42,7 @@ type Input = {
 	introOutro: IntroOutroSettings;
 	setIntroOutro: (settings: IntroOutroSettings) => void;
 	previewAspectRatio: number;
+	sourceAudioFallbackPaths: string[];
 };
 
 export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof SettingsPanel> {
@@ -72,6 +74,7 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		introOutro,
 		setIntroOutro,
 		previewAspectRatio,
+		sourceAudioFallbackPaths,
 	} = input;
 	const selectedZoom = timeline.zoomRegions.find(
 		(region) => region.id === timeline.selectedZoomId,
@@ -194,6 +197,8 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		onAspectRatioChange: setAspectRatio,
 		introOutro,
 		onIntroOutroChange: setIntroOutro,
+		voiceMicPath: findMicSidecarPath(sourceAudioFallbackPaths),
+		onVoiceTrackChanged: () => timeline.setSourceAudioFallbackRefreshKey((key) => key + 1),
 		previewAspectRatio,
 		selectedAnnotationId: timeline.selectedAnnotationId,
 		annotationRegions: timeline.annotationRegions,

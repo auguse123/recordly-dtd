@@ -1,20 +1,20 @@
 import type { WebDemuxer } from "web-demuxer";
-import { requiresClipTimelineRendering } from "./clipTimeline";
 import type {
 	AudioRegion,
 	ClipRegion,
 	SourceAudioTrackSettings,
 	SpeedRegion,
 } from "@/components/video-editor/types";
-import { resolveSourceTrackRoutingPolicy } from "./sourceTrackRoutingPolicy";
-import { AudioTranscodeProcessor } from "./audioTranscodeProcessor";
 import {
 	hasNonDefaultSourceTrackSettings,
 	MIN_SPEED_REGION_DELTA_MS,
 	MP4_AUDIO_CODEC,
 	type TrimLikeRegion,
 } from "./audioProcessorShared";
+import { AudioTranscodeProcessor } from "./audioTranscodeProcessor";
+import { requiresClipTimelineRendering } from "./clipTimeline";
 import type { VideoMuxer } from "./muxer";
+import { resolveSourceTrackRoutingPolicy } from "./sourceTrackRoutingPolicy";
 
 export {
 	getSourceTrackIdFromPath,
@@ -276,6 +276,50 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 			clipRegions,
 		);
 		return this.renderToWavBlobChunked(prepared);
+	}
+
+	/**
+	 * One sidecar track (e.g. the raw mic) laid on the edited timeline as WAV,
+	 * at unity gain and without the video's own audio or added audio regions.
+	 */
+	async renderIsolatedSourceTrack(options: {
+		videoUrl: string;
+		trackPath: string;
+		startDelayMs?: number;
+		trimRegions?: TrimLikeRegion[];
+		speedRegions?: SpeedRegion[];
+		clipRegions?: ClipRegion[];
+	}): Promise<Blob> {
+		const sortedTrims = options.trimRegions
+			? [...options.trimRegions].sort((a, b) => a.startMs - b.startMs)
+			: [];
+		const sortedSpeedRegions = options.speedRegions
+			? [...options.speedRegions]
+					.filter((region) => region.endMs - region.startMs > MIN_SPEED_REGION_DELTA_MS)
+					.sort((a, b) => a.startMs - b.startMs)
+			: [];
+		this.skipEmbeddedSourceAudio = true;
+		try {
+			const prepared = await this.prepareOfflineRender(
+				options.videoUrl,
+				sortedTrims,
+				sortedSpeedRegions,
+				[],
+				[options.trackPath],
+				options.startDelayMs !== undefined
+					? { [options.trackPath]: options.startDelayMs }
+					: undefined,
+				undefined,
+				options.clipRegions,
+			);
+			return await this.renderToWavBlobChunked({
+				...prepared,
+				mainBufferEntry: null,
+				regionEntries: [],
+			});
+		} finally {
+			this.skipEmbeddedSourceAudio = false;
+		}
 	}
 
 	// Legacy trim-only path used when no speed regions are configured.
