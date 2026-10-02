@@ -359,6 +359,9 @@
 		"delete": "Delete audio clip",
 		"syncOffset": "Audio offset",
 		"syncOffsetHint": "+ plays the sound later, − earlier, without moving the clip.",
-		"syncAllClips": "Offset every audio clip"
+		"syncAllClips": "Offset every audio clip",
+		"tracks": "Tracks",
+		"muteTrack": "Mute {{track}}",
+		"tracksAllClips": "Apply to every audio clip"
 	}
 }

@@ -359,6 +359,9 @@
 		"delete": "Delete audio clip",
 		"syncOffset": "오디오 오프셋",
 		"syncOffsetHint": "+는 소리를 늦게, −는 빠르게 재생하며 클립은 움직이지 않습니다.",
-		"syncAllClips": "모든 오디오 클립에 적용"
+		"syncAllClips": "모든 오디오 클립에 적용",
+		"tracks": "트랙",
+		"muteTrack": "{{track}} 음소거",
+		"tracksAllClips": "모든 오디오 클립에 적용"
 	}
 }

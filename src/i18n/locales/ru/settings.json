@@ -359,6 +359,9 @@
 		"delete": "Delete audio clip",
 		"syncOffset": "Сдвиг звука",
 		"syncOffsetHint": "+ воспроизводит звук позже, − раньше, не перемещая клип.",
-		"syncAllClips": "Сдвигать все аудиоклипы"
+		"syncAllClips": "Сдвигать все аудиоклипы",
+		"tracks": "Дорожки",
+		"muteTrack": "Отключить {{track}}",
+		"tracksAllClips": "Применить ко всем аудиоклипам"
 	}
 }

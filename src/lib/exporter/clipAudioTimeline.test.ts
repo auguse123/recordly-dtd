@@ -87,6 +87,52 @@ describe("clip audio timeline", () => {
 		expect(starts).toHaveLength(1);
 		expect(starts[0]).toHaveBeenCalledWith(0);
 	});
+	it("levels each source track of a detached audio clip on its own", async () => {
+		const processor = new TestAudioProcessor();
+		processor.setDetachedAudioClips([
+			{
+				id: "aclip-1",
+				startMs: 0,
+				endMs: 1000,
+				sourceStartMs: 0,
+				speed: 1,
+				volume: 2,
+				trackVolumes: { system: 0.5 },
+				mutedTracks: ["mic"],
+			},
+		]);
+		const prepared = await processor.prepare(
+			"file:///tmp/source.mp4",
+			[],
+			[],
+			[],
+			["file:///tmp/source.mic.m4a"],
+			undefined,
+			undefined,
+			[{ id: "v", startMs: 0, endMs: 1000, sourceStartMs: 0, speed: 1 }],
+		);
+		expect(prepared.slices[0].trackGains).toEqual({ system: 0.5, mic: 0 });
+		expect(prepared.companionEntries.map((entry) => entry.trackId)).toEqual(["mic"]);
+		const gains: number[] = [];
+		const ctx = {
+			destination: {},
+			createGain: () => {
+				const node = { gain: { value: 1 }, connect: vi.fn() };
+				queueMicrotask(() => gains.push(node.gain.value));
+				return node;
+			},
+			createBufferSource: () => ({
+				playbackRate: { value: 1 },
+				connect: vi.fn(),
+				start: vi.fn(),
+			}),
+		} as unknown as OfflineAudioContext;
+		for (const trackId of ["system", "mic", undefined]) {
+			processor.schedule(ctx, buffer, prepared.slices, 0, 1, 0, 2, [], [], trackId);
+		}
+		await Promise.resolve();
+		expect(gains).toEqual([1, 0, 2]);
+	});
 	it("an explicitly empty clip list schedules no source audio", async () => {
 		const processor = new TestAudioProcessor();
 		const prepared = await processor.prepare(

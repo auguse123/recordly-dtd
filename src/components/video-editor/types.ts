@@ -256,6 +256,13 @@ export interface ClipRegion {
 	 * (negative: earlier) without moving or resizing the clip.
 	 */
 	syncOffsetMs?: number;
+	/**
+	 * Volume of each source track (system, mic…) within a detached audio clip,
+	 * on top of `volume` (0–2, 1 when unset).
+	 */
+	trackVolumes?: Record<string, number>;
+	/** Source tracks silenced within a detached audio clip. */
+	mutedTracks?: string[];
 	/** Transition into the next clip (or out to black on the last clip). */
 	transitionOut?: ClipTransition;
 }

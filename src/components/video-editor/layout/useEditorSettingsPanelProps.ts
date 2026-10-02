@@ -1,5 +1,6 @@
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
+import type { SourceAudioTrackMetaItem } from "../audio/audioTypes";
 import { getAudioRegionMix } from "../audio/musicDucking";
 import { useClipAudioReset } from "../audio/useClipAudioReset";
 import type { useAutoCaptionController } from "../captions/useAutoCaptionController";
@@ -46,6 +47,7 @@ type Input = {
 	setIntroOutro: (settings: IntroOutroSettings) => void;
 	previewAspectRatio: number;
 	sourceAudioFallbackPaths: string[];
+	sourceAudioTracks: SourceAudioTrackMetaItem[];
 };
 
 export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof SettingsPanel> {
@@ -122,6 +124,9 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		onAudioClipVolumeChange: audioClipCommands.handleAudioClipVolumeChange,
 		onAudioClipMutedChange: audioClipCommands.handleAudioClipMutedChange,
 		onAudioClipSyncOffsetChange: audioClipCommands.handleAudioClipSyncOffsetChange,
+		audioClipTracks: input.sourceAudioTracks,
+		onAudioClipTrackVolumeChange: audioClipCommands.handleAudioClipTrackVolumeChange,
+		onAudioClipTrackMutedChange: audioClipCommands.handleAudioClipTrackMutedChange,
 		onAudioClipDelete: audioClipCommands.handleAudioClipDelete,
 		selectedAudioId: timeline.selectedAudioId,
 		selectedAudioVolume: selectedAudio?.volume ?? null,

@@ -41,6 +41,8 @@ export interface TimelineRenderItem {
 	label: string;
 	audioPath?: string;
 	audioGain?: number;
+	/** Detached audio clips: gain of each source track lane, 1 when unset (0: muted). */
+	audioTrackGains?: Record<string, number>;
 	audioNormalize?: boolean;
 	zoomDepth?: number;
 	zoomMode?: ZoomMode;

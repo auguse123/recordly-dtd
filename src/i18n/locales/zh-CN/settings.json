@@ -359,6 +359,9 @@
 		"delete": "Delete audio clip",
 		"syncOffset": "音频偏移",
 		"syncOffsetHint": "+ 让声音延后，− 提前，不移动片段。",
-		"syncAllClips": "偏移所有音频片段"
+		"syncAllClips": "偏移所有音频片段",
+		"tracks": "音轨",
+		"muteTrack": "静音 {{track}}",
+		"tracksAllClips": "应用于所有音频片段"
 	}
 }

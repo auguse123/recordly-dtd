@@ -786,29 +786,37 @@ const TimelineCanvasRows = memo(function TimelineCanvasRows({
 							id={isPrimaryLane ? DETACHED_AUDIO_ROW_ID : rowId}
 							isEmpty={audioClipItems.length === 0}
 						>
-							{audioClipItems.map((item) => (
-								<Item
-									key={isPrimaryLane ? item.id : `${rowId}-${item.id}`}
-									id={isPrimaryLane ? item.id : `${rowId}-${item.id}`}
-									rowId={isPrimaryLane ? DETACHED_AUDIO_ROW_ID : rowId}
-									span={item.span}
-									disabled={!isPrimaryLane}
-									isSelected={item.id === selectedAudioClipId}
-									onSelect={
-										isPrimaryLane
-											? undefined
-											: () => onSelectAudioClip?.(item.id)
-									}
-									onSelectId={isPrimaryLane ? onSelectAudioClip : undefined}
-									variant="audio"
-									waveformPeaks={track?.peaks}
-									waveformSegmentSpan={item.sourceSpan ?? item.span}
-									waveformGain={Math.max(0, Math.min(1, item.audioGain ?? 1))}
-									muted={item.muted}
-								>
-									{track ? `${item.label} · ${track.label}` : item.label}
-								</Item>
-							))}
+							{audioClipItems.map((item) => {
+								const trackGain = track
+									? (item.audioTrackGains?.[track.id] ?? 1)
+									: 1;
+								return (
+									<Item
+										key={isPrimaryLane ? item.id : `${rowId}-${item.id}`}
+										id={isPrimaryLane ? item.id : `${rowId}-${item.id}`}
+										rowId={isPrimaryLane ? DETACHED_AUDIO_ROW_ID : rowId}
+										span={item.span}
+										disabled={!isPrimaryLane}
+										isSelected={item.id === selectedAudioClipId}
+										onSelect={
+											isPrimaryLane
+												? undefined
+												: () => onSelectAudioClip?.(item.id)
+										}
+										onSelectId={isPrimaryLane ? onSelectAudioClip : undefined}
+										variant="audio"
+										waveformPeaks={track?.peaks}
+										waveformSegmentSpan={item.sourceSpan ?? item.span}
+										waveformGain={Math.max(
+											0,
+											Math.min(1, (item.audioGain ?? 1) * trackGain),
+										)}
+										muted={item.muted || trackGain === 0}
+									>
+										{track ? `${item.label} · ${track.label}` : item.label}
+									</Item>
+								);
+							})}
 						</Row>
 					);
 				})}

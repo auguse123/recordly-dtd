@@ -103,6 +103,8 @@ export function useClipAudioSettingsController({
 		embeddedSourcePreviewGain,
 		getSourceTrackPreviewGain,
 		getClipPreviewGains,
+		/** The track the video file's own sound stands for. */
+		embeddedTrackId,
 	};
 }
 

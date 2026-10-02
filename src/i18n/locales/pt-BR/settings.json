@@ -359,6 +359,9 @@
 		"delete": "Delete audio clip",
 		"syncOffset": "Deslocamento do áudio",
 		"syncOffsetHint": "+ atrasa o som, − adianta, sem mover o clipe.",
-		"syncAllClips": "Deslocar todos os clipes de áudio"
+		"syncAllClips": "Deslocar todos os clipes de áudio",
+		"tracks": "Faixas",
+		"muteTrack": "Silenciar {{track}}",
+		"tracksAllClips": "Aplicar a todos os clipes de áudio"
 	}
 }

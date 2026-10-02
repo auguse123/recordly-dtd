@@ -391,6 +391,7 @@ export default function VideoEditor() {
 		setIntroOutro: exportSettings.setIntroOutro,
 		previewAspectRatio: previewAspectRatioValue,
 		sourceAudioFallbackPaths: audio.sourceAudioFallbackPaths,
+		sourceAudioTracks: audio.sourceAudioTrackMeta,
 	});
 	return (
 		<EditorShell

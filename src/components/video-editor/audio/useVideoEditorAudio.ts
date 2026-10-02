@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import type { SourceAudioTrackSettings } from "@/components/video-editor/audio/audioTypes";
+import { getSourceTrackIdFromPath } from "@/lib/exporter/audioRoutingEngine";
 import { resolveSourceTrackRoutingPolicy } from "@/lib/exporter/sourceTrackRoutingPolicy";
 import { getGainAt, getTransitionGainEnvelope, resolveClipTransitions } from "../clipTransitions";
 import type { AudioRegion, ClipRegion } from "../types";
@@ -9,6 +10,7 @@ import { isClipMutedById } from "./clipAudio";
 import {
 	findAudioClipAt,
 	getAudioClipSourceTimeMs,
+	getAudioClipTrackGain,
 	getAudioClipVolume,
 	resolveAudioClipSync,
 } from "./detachedAudio";
@@ -137,6 +139,7 @@ export function useVideoEditorAudio({
 		embeddedSourcePreviewGain,
 		getSourceTrackPreviewGain,
 		getClipPreviewGains,
+		embeddedTrackId,
 	} = useClipAudioSettingsController({
 		selectedClipId,
 		activeClipId: activeClipIdAtCurrentTime,
@@ -165,10 +168,21 @@ export function useVideoEditorAudio({
 			const isVideoClipMuted = !videoClip || isClipMutedById(videoClip.id, clipRegions);
 			const transitionGain = getGainAt(transitionGainEnvelope, timelineMs);
 			const gains = getClipPreviewGains(videoClip?.id ?? null);
-			const getSourceTrackGain = embeddedSourceAudioPath
+			const getBaseTrackGain = embeddedSourceAudioPath
 				? (path: string) =>
 						path === embeddedSourceAudioPath ? gains.embedded : gains.forPath(path)
 				: gains.forPath;
+			// A detached clip levels each track (system, mic…) on its own.
+			const getSourceTrackGain = audioClip
+				? (path: string) =>
+						getBaseTrackGain(path) *
+						getAudioClipTrackGain(
+							audioClip,
+							path === embeddedSourceAudioPath
+								? embeddedTrackId
+								: getSourceTrackIdFromPath(path),
+						)
+				: getBaseTrackGain;
 			const frame: PreviewAudioFrame = {
 				sourceTime:
 					audioClip !== null
@@ -198,6 +212,7 @@ export function useVideoEditorAudio({
 	}, [
 		clipRegions,
 		embeddedSourceAudioPath,
+		embeddedTrackId,
 		getClipPreviewGains,
 		isAudioDetached,
 		playbackAudioClips,

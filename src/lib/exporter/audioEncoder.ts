@@ -290,6 +290,8 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 		trimRegions?: TrimLikeRegion[];
 		speedRegions?: SpeedRegion[];
 		clipRegions?: ClipRegion[];
+		/** Source track the file holds (its per-clip levels apply), from its path when unset. */
+		trackId?: string;
 	}): Promise<Blob> {
 		const sortedTrims = options.trimRegions
 			? [...options.trimRegions].sort((a, b) => a.startMs - b.startMs)
@@ -313,9 +315,14 @@ export class AudioProcessor extends AudioTranscodeProcessor {
 				undefined,
 				options.clipRegions,
 			);
+			const { trackId } = options;
 			return await this.renderToWavBlobChunked({
 				...prepared,
 				mainBufferEntry: null,
+				companionEntries:
+					trackId !== undefined
+						? prepared.companionEntries.map((entry) => ({ ...entry, trackId }))
+						: prepared.companionEntries,
 				regionEntries: [],
 			});
 		} finally {

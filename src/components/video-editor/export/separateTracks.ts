@@ -75,6 +75,7 @@ export async function createSeparateTracks(exportedPath: string) {
 				trimRegions: context.trimRegions,
 				speedRegions: context.speedRegions,
 				clipRegions: context.clipRegions,
+				trackId: "mic",
 			});
 			voiceWavPath = await streamExportBlobToTempFile(blob, "wav");
 		}

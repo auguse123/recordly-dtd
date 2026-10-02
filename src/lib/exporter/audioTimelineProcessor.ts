@@ -84,6 +84,7 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
 		chunkDurationSec = Number.POSITIVE_INFINITY,
 		mutedOutputRangesSec: Array<{ startSec: number; endSec: number }> = [],
 		gainEnvelope: GainPoint[] = [],
+		trackId?: string,
 	): void {
 		let outputOffsetSec = 0;
 
@@ -182,7 +183,8 @@ export class AudioTimelineProcessor extends AudioProcessorBase {
 				}
 				const source = ctx.createBufferSource();
 				const gainNode = ctx.createGain();
-				const baseGain = Math.max(0, Math.min(4, gain * (slice.gain ?? 1)));
+				const trackGain = trackId !== undefined ? (slice.trackGains?.[trackId] ?? 1) : 1;
+				const baseGain = Math.max(0, Math.min(4, gain * (slice.gain ?? 1) * trackGain));
 				gainNode.gain.value = baseGain;
 
 				const sourceOffsetSec =

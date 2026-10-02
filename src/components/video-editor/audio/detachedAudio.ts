@@ -17,8 +17,86 @@ function safeSpeed(clip: ClipRegion): number {
 
 export function getAudioClipVolume(clip: Pick<ClipRegion, "volume">): number {
 	return typeof clip.volume === "number" && Number.isFinite(clip.volume)
-		? Math.max(0, Math.min(MAX_AUDIO_CLIP_VOLUME, clip.volume))
+		? clampAudioClipVolume(clip.volume)
 		: 1;
+}
+
+function clampAudioClipVolume(volume: number): number {
+	return Math.max(0, Math.min(MAX_AUDIO_CLIP_VOLUME, volume));
+}
+
+type AudioClipTrackFields = Pick<ClipRegion, "trackVolumes" | "mutedTracks">;
+
+/** Volume of one source track within an audio clip, mute aside (1 when unset). */
+export function getAudioClipTrackVolume(clip: AudioClipTrackFields, trackId: string): number {
+	const volume = clip.trackVolumes?.[trackId];
+	return typeof volume === "number" && Number.isFinite(volume) ? clampAudioClipVolume(volume) : 1;
+}
+
+export function isAudioClipTrackMuted(clip: AudioClipTrackFields, trackId: string): boolean {
+	return clip.mutedTracks?.includes(trackId) === true;
+}
+
+/** What one source track contributes within an audio clip: its volume, 0 when muted. */
+export function getAudioClipTrackGain(clip: AudioClipTrackFields, trackId: string): number {
+	return isAudioClipTrackMuted(clip, trackId) ? 0 : getAudioClipTrackVolume(clip, trackId);
+}
+
+/** Gains of the tracks an audio clip sets apart, or undefined when all play as-is. */
+export function getAudioClipTrackGains(
+	clip: AudioClipTrackFields,
+): Record<string, number> | undefined {
+	const trackIds = new Set([
+		...Object.keys(clip.trackVolumes ?? {}),
+		...(clip.mutedTracks ?? []),
+	]);
+	if (trackIds.size === 0) return undefined;
+	const gains: Record<string, number> = {};
+	for (const trackId of trackIds) gains[trackId] = getAudioClipTrackGain(clip, trackId);
+	return gains;
+}
+
+function withTrackVolume(clip: ClipRegion, trackId: string, volume: number): ClipRegion {
+	const { [trackId]: _previous, ...others } = clip.trackVolumes ?? {};
+	const { trackVolumes: _volumes, ...rest } = clip;
+	const trackVolumes = volume === 1 ? others : { ...others, [trackId]: volume };
+	return Object.keys(trackVolumes).length > 0 ? { ...rest, trackVolumes } : rest;
+}
+
+function withTrackMuted(clip: ClipRegion, trackId: string, muted: boolean): ClipRegion {
+	const others = (clip.mutedTracks ?? []).filter((id) => id !== trackId);
+	const { mutedTracks: _muted, ...rest } = clip;
+	const mutedTracks = muted ? [...others, trackId] : others;
+	return mutedTracks.length > 0 ? { ...rest, mutedTracks } : rest;
+}
+
+/** Sets one track's volume in the given audio clips (all clips when `ids` is null). */
+export function setAudioClipTrackVolume(
+	clips: ClipRegion[],
+	ids: ReadonlySet<string> | null,
+	trackId: string,
+	volume: number,
+): ClipRegion[] {
+	const value = Number.isFinite(volume) ? clampAudioClipVolume(volume) : 1;
+	return clips.map((clip) =>
+		(ids && !ids.has(clip.id)) || getAudioClipTrackVolume(clip, trackId) === value
+			? clip
+			: withTrackVolume(clip, trackId, value),
+	);
+}
+
+/** Mutes or unmutes one track in the given audio clips (all clips when `ids` is null). */
+export function setAudioClipTrackMuted(
+	clips: ClipRegion[],
+	ids: ReadonlySet<string> | null,
+	trackId: string,
+	muted: boolean,
+): ClipRegion[] {
+	return clips.map((clip) =>
+		(ids && !ids.has(clip.id)) || isAudioClipTrackMuted(clip, trackId) === muted
+			? clip
+			: withTrackMuted(clip, trackId, muted),
+	);
 }
 
 export function getAudioClipSyncOffsetMs(clip: Pick<ClipRegion, "syncOffsetMs">): number {
@@ -193,6 +271,16 @@ function finiteNumber(value: unknown): number | undefined {
 	return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+function normalizeTrackVolumes(value: unknown): Record<string, number> | undefined {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+	const volumes: Record<string, number> = {};
+	for (const [trackId, volume] of Object.entries(value)) {
+		const finite = finiteNumber(volume);
+		if (finite !== undefined && finite !== 1) volumes[trackId] = clampAudioClipVolume(finite);
+	}
+	return Object.keys(volumes).length > 0 ? volumes : undefined;
+}
+
 /** Validates persisted audio clips; anything unusable means "audio linked". */
 export function normalizeAudioClipRegions(value: unknown): ClipRegion[] | null {
 	if (!Array.isArray(value)) return null;
@@ -214,6 +302,10 @@ export function normalizeAudioClipRegions(value: unknown): ClipRegion[] | null {
 		const sourceMaxMs = finiteNumber(candidate.sourceMaxMs);
 		const volume = finiteNumber(candidate.volume);
 		const syncOffsetMs = finiteNumber(candidate.syncOffsetMs);
+		const trackVolumes = normalizeTrackVolumes(candidate.trackVolumes);
+		const mutedTracks = Array.isArray(candidate.mutedTracks)
+			? [...new Set(candidate.mutedTracks.filter((id) => typeof id === "string"))]
+			: [];
 		clips.push({
 			id: candidate.id,
 			startMs: start,
@@ -225,6 +317,8 @@ export function normalizeAudioClipRegions(value: unknown): ClipRegion[] | null {
 			...(candidate.muted === true ? { muted: true } : {}),
 			...(volume !== undefined ? { volume: getAudioClipVolume({ volume }) } : {}),
 			...(syncOffsetMs ? { syncOffsetMs: Math.round(syncOffsetMs) } : {}),
+			...(trackVolumes ? { trackVolumes } : {}),
+			...(mutedTracks.length > 0 ? { mutedTracks } : {}),
 		});
 	}
 	const sorted = sortClipRegions(clips);

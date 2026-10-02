@@ -359,6 +359,9 @@
 		"delete": "Delete audio clip",
 		"syncOffset": "Audio-Versatz",
 		"syncOffsetHint": "+ spielt den Ton später, − früher, ohne den Clip zu verschieben.",
-		"syncAllClips": "Alle Audioclips versetzen"
+		"syncAllClips": "Alle Audioclips versetzen",
+		"tracks": "Spuren",
+		"muteTrack": "{{track}} stummschalten",
+		"tracksAllClips": "Auf alle Audioclips anwenden"
 	}
 }

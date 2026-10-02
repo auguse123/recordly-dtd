@@ -1,5 +1,8 @@
 import { SOURCE_AUDIO_NORMALIZE_GAIN } from "@/components/video-editor/audio/audioTypes";
-import { resolveAudioClipSync } from "@/components/video-editor/audio/detachedAudio";
+import {
+	getAudioClipTrackGains,
+	resolveAudioClipSync,
+} from "@/components/video-editor/audio/detachedAudio";
 import {
 	buildAudioRegionGainEnvelope,
 	detectSpeechRanges,
@@ -140,7 +143,15 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 				? await this.decodeAudioFromUrl(videoUrl)
 				: null;
 		const mainBufferGain = resolveSourceTrackGain(sourceAudioTrackSettings, "mixed");
-		const mainBufferEntry = mainBuffer ? { buffer: mainBuffer, gain: mainBufferGain } : null;
+		// Next to a lone mic sidecar the video's own sound is the system track.
+		const companionTrackIds = resolvedPlan.playbackPaths.map(getSourceTrackIdFromPath);
+		const mainTrackId =
+			companionTrackIds.includes("mic") && !companionTrackIds.includes("system")
+				? "system"
+				: "mixed";
+		const mainBufferEntry = mainBuffer
+			? { buffer: mainBuffer, gain: mainBufferGain, trackId: mainTrackId }
+			: null;
 		if (this.cancelled) throw new Error("Export cancelled");
 
 		// Decode companion / sidecar audio files
@@ -148,6 +159,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			buffer: AudioBuffer;
 			startDelaySec: number;
 			gain: number;
+			trackId: string;
 		}> = [];
 		let micEntry: { buffer: AudioBuffer; startDelaySec: number } | null = null;
 		const refDuration =
@@ -161,6 +173,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 			const trackId = getSourceTrackIdFromPath(audioPath);
 			const entry = {
 				buffer,
+				trackId,
 				gain: resolveSourceTrackGain(sourceAudioTrackSettings, trackId),
 				startDelaySec: estimateCompanionAudioStartDelaySeconds(
 					refDuration,
@@ -211,6 +224,9 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					speed: clip.speed,
 					outputStartMs: clip.startMs,
 					...(detached && typeof clip.volume === "number" ? { gain: clip.volume } : {}),
+					...(detached && getAudioClipTrackGains(clip)
+						? { trackGains: getAudioClipTrackGains(clip) }
+						: {}),
 				}))
 			: this.buildTimelineSlices(sourceDurationMs, trimRegions, speedRegions);
 
@@ -416,6 +432,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					chunkSec,
 					prepared.mutedSourceOutputRangesSec,
 					prepared.sourceGainEnvelope,
+					prepared.mainBufferEntry.trackId,
 				);
 			}
 
@@ -431,6 +448,7 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 					chunkSec,
 					prepared.mutedSourceOutputRangesSec,
 					prepared.sourceGainEnvelope,
+					entry.trackId,
 				);
 			}
 

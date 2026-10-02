@@ -359,6 +359,9 @@
 		"delete": "Delete audio clip",
 		"syncOffset": "Audio-verschuiving",
 		"syncOffsetHint": "+ speelt het geluid later, − eerder, zonder de clip te verplaatsen.",
-		"syncAllClips": "Alle audioclips verschuiven"
+		"syncAllClips": "Alle audioclips verschuiven",
+		"tracks": "Sporen",
+		"muteTrack": "{{track}} dempen",
+		"tracksAllClips": "Toepassen op alle audioclips"
 	}
 }

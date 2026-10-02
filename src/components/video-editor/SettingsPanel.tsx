@@ -30,6 +30,7 @@ import { useI18n, useScopedT } from "../../contexts/I18nContext";
 import type { AppLocale } from "../../i18n/config";
 import { SUPPORTED_LOCALES } from "../../i18n/config";
 import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
+import type { SourceAudioTrackMetaItem } from "./audio/audioTypes";
 import { MAX_AUDIO_CLIP_VOLUME } from "./audio/detachedAudio";
 import {
 	type AudioRegionMix,
@@ -471,10 +472,20 @@ interface SettingsPanelProps {
 	onDetachAudio?: () => void;
 	onReattachAudio?: () => void;
 	selectedAudioClipId?: string | null;
-	selectedAudioClip?: { volume: number; muted: boolean; syncOffsetMs: number } | null;
+	selectedAudioClip?: {
+		volume: number;
+		muted: boolean;
+		syncOffsetMs: number;
+		getTrackVolume: (trackId: string) => number;
+		isTrackMuted: (trackId: string) => boolean;
+	} | null;
 	onAudioClipVolumeChange?: (volume: number) => void;
 	onAudioClipMutedChange?: (muted: boolean) => void;
 	onAudioClipSyncOffsetChange?: (offsetMs: number, applyToAll: boolean) => void;
+	/** The recording's source tracks (system, mic…), each with its own level per audio clip. */
+	audioClipTracks?: SourceAudioTrackMetaItem[];
+	onAudioClipTrackVolumeChange?: (trackId: string, volume: number, applyToAll: boolean) => void;
+	onAudioClipTrackMutedChange?: (trackId: string, muted: boolean, applyToAll: boolean) => void;
 	onAudioClipDelete?: (id: string) => void;
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
@@ -954,6 +965,9 @@ export function SettingsPanel({
 	onAudioClipVolumeChange,
 	onAudioClipMutedChange,
 	onAudioClipSyncOffsetChange,
+	audioClipTracks = [],
+	onAudioClipTrackVolumeChange,
+	onAudioClipTrackMutedChange,
 	onAudioClipDelete,
 	selectedAudioId,
 	selectedAudioVolume,
@@ -1079,6 +1093,7 @@ export function SettingsPanel({
 	);
 	const [experimentalUpdatesEnabled, setExperimentalUpdatesEnabled] = useState(false);
 	const [syncAllAudioClips, setSyncAllAudioClips] = useState(true);
+	const [trackAllAudioClips, setTrackAllAudioClips] = useState(true);
 	const [savingExperimentalUpdates, setSavingExperimentalUpdates] = useState(false);
 	const { openConfig: openShortcutsConfig } = useShortcuts();
 	const [internalActiveEffectSection] = useState<EditorEffectSection>("scene");
@@ -2871,6 +2886,73 @@ export function SettingsPanel({
 						aria-label={tSettings("audioClip.mute", "Mute audio clip")}
 					/>
 				</label>
+				{audioClipTracks.length > 1 && (
+					<div className="flex flex-col gap-2 rounded-lg border border-foreground/10 p-2.5">
+						<span className="text-xs font-medium text-foreground/80">
+							{tSettings("audioClip.tracks", "Tracks")}
+						</span>
+						{audioClipTracks.map((track) => {
+							const trackMuted = selectedAudioClip.isTrackMuted(track.id);
+							const muteLabel = tSettings("audioClip.muteTrack", "Mute {{track}}", {
+								track: track.label,
+							});
+							return (
+								<div
+									key={track.id}
+									className={cn(
+										"flex flex-col gap-1",
+										trackMuted && "opacity-60",
+									)}
+								>
+									<SliderControl
+										label={track.label}
+										value={selectedAudioClip.getTrackVolume(track.id)}
+										min={0}
+										max={MAX_AUDIO_CLIP_VOLUME}
+										step={0.05}
+										onChange={(volume) =>
+											onAudioClipTrackVolumeChange?.(
+												track.id,
+												volume,
+												trackAllAudioClips,
+											)
+										}
+										formatValue={(value) => `${Math.round(value * 100)}%`}
+									/>
+									<label className="flex items-center justify-between">
+										<span className="text-xs text-muted-foreground">
+											{muteLabel}
+										</span>
+										<Switch
+											checked={trackMuted}
+											onCheckedChange={(muted) =>
+												onAudioClipTrackMutedChange?.(
+													track.id,
+													muted,
+													trackAllAudioClips,
+												)
+											}
+											aria-label={muteLabel}
+										/>
+									</label>
+								</div>
+							);
+						})}
+						<label className="flex items-center justify-between pt-1">
+							<span className="text-xs text-muted-foreground">
+								{tSettings("audioClip.tracksAllClips", "Apply to every audio clip")}
+							</span>
+							<Switch
+								checked={trackAllAudioClips}
+								onCheckedChange={setTrackAllAudioClips}
+								aria-label={tSettings(
+									"audioClip.tracksAllClips",
+									"Apply to every audio clip",
+								)}
+							/>
+						</label>
+					</div>
+				)}
 				<SyncOffsetControl
 					label={tSettings("audioClip.syncOffset", "Audio offset")}
 					hint={tSettings(

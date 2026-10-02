@@ -359,6 +359,9 @@
 		"delete": "Supprimer le clip son",
 		"syncOffset": "Décalage son",
 		"syncOffsetHint": "+ retarde le son, − l’avance, sans déplacer le clip.",
-		"syncAllClips": "Décaler tous les clips audio"
+		"syncAllClips": "Décaler tous les clips audio",
+		"tracks": "Pistes",
+		"muteTrack": "Couper {{track}}",
+		"tracksAllClips": "Appliquer à tous les clips audio"
 	}
 }

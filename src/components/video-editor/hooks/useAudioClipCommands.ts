@@ -6,10 +6,14 @@ import {
 	detachClipAudio,
 	findAudioClipAt,
 	getAudioClipSyncOffsetMs,
+	getAudioClipTrackVolume,
 	getAudioClipVolume,
+	isAudioClipTrackMuted,
 	MAX_AUDIO_CLIP_VOLUME,
 	nextAudioClipNumber,
 	setAudioClipSyncOffset,
+	setAudioClipTrackMuted,
+	setAudioClipTrackVolume,
 	splitAudioClip,
 } from "../audio/detachedAudio";
 import type { ClipRegion, EditorEffectSection } from "../types";
@@ -177,6 +181,29 @@ export function useAudioClipCommands({
 		[selectedAudioClipId, setAudioClipRegions],
 	);
 
+	/** Sets one source track's level in the selected audio clip, or in every audio clip. */
+	const handleAudioClipTrackVolumeChange = useCallback(
+		(trackId: string, volume: number, applyToAll: boolean) => {
+			if (!applyToAll && !selectedAudioClipId) return;
+			const ids = applyToAll ? null : new Set([selectedAudioClipId as string]);
+			setAudioClipRegions((current) =>
+				current ? setAudioClipTrackVolume(current, ids, trackId, volume) : current,
+			);
+		},
+		[selectedAudioClipId, setAudioClipRegions],
+	);
+
+	const handleAudioClipTrackMutedChange = useCallback(
+		(trackId: string, muted: boolean, applyToAll: boolean) => {
+			if (!applyToAll && !selectedAudioClipId) return;
+			const ids = applyToAll ? null : new Set([selectedAudioClipId as string]);
+			setAudioClipRegions((current) =>
+				current ? setAudioClipTrackMuted(current, ids, trackId, muted) : current,
+			);
+		},
+		[selectedAudioClipId, setAudioClipRegions],
+	);
+
 	const selectedAudioClip = useMemo(() => {
 		const clip = audioClipRegions?.find((item) => item.id === selectedAudioClipId);
 		return clip
@@ -184,6 +211,8 @@ export function useAudioClipCommands({
 					volume: getAudioClipVolume(clip),
 					muted: Boolean(clip.muted),
 					syncOffsetMs: getAudioClipSyncOffsetMs(clip),
+					getTrackVolume: (trackId: string) => getAudioClipTrackVolume(clip, trackId),
+					isTrackMuted: (trackId: string) => isAudioClipTrackMuted(clip, trackId),
 				}
 			: null;
 	}, [audioClipRegions, selectedAudioClipId]);
@@ -200,5 +229,7 @@ export function useAudioClipCommands({
 		handleAudioClipVolumeChange,
 		handleAudioClipMutedChange,
 		handleAudioClipSyncOffsetChange,
+		handleAudioClipTrackVolumeChange,
+		handleAudioClipTrackMutedChange,
 	};
 }

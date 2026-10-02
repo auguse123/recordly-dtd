@@ -116,12 +116,20 @@ export interface TimelineSlice {
 	speed: number;
 	/** Extra volume of this slice (detached audio clips), 1 when unset. */
 	gain?: number;
+	/** Extra volume of each source track (system, mic…) in this slice, 1 when unset. */
+	trackGains?: Record<string, number>;
 }
 
 export interface PreparedOfflineRender {
 	usesClipTimeline?: boolean;
-	mainBufferEntry: { buffer: AudioBuffer; gain: number } | null;
-	companionEntries: Array<{ buffer: AudioBuffer; startDelaySec: number; gain: number }>;
+	/** `trackId`: which source track the buffer holds, for per-track slice gains. */
+	mainBufferEntry: { buffer: AudioBuffer; gain: number; trackId?: string } | null;
+	companionEntries: Array<{
+		buffer: AudioBuffer;
+		startDelaySec: number;
+		gain: number;
+		trackId?: string;
+	}>;
 	regionEntries: Array<{
 		buffer: AudioBuffer;
 		region: AudioRegion;

@@ -7,11 +7,17 @@ import {
 	findAudioClipAt,
 	getAudioClipSourceTimeMs,
 	getAudioClipSyncedSourceSpan,
+	getAudioClipTrackGain,
+	getAudioClipTrackGains,
+	getAudioClipTrackVolume,
 	getAudioClipVolume,
+	isAudioClipTrackMuted,
 	nextAudioClipNumber,
 	normalizeAudioClipRegions,
 	resolveAudioClipSync,
 	setAudioClipSyncOffset,
+	setAudioClipTrackMuted,
+	setAudioClipTrackVolume,
 	splitAudioClip,
 } from "./detachedAudio";
 
@@ -214,5 +220,55 @@ describe("audio clip sync offset", () => {
 		expect(saved.syncOffsetMs).toBe(-250);
 		const split = splitAudioClip([saved], "aclip-1", 500, "aclip-2");
 		expect(split?.map((item) => item.syncOffsetMs)).toEqual([-250, -250]);
+	});
+});
+
+describe("audio clip source tracks", () => {
+	it("levels one track without touching the other", () => {
+		const clips = [clip({ id: "a" }), clip({ id: "b", startMs: 1_000, endMs: 2_000 })];
+		const quieter = setAudioClipTrackVolume(clips, new Set(["a"]), "system", 0.3);
+		expect(getAudioClipTrackVolume(quieter[0], "system")).toBe(0.3);
+		expect(getAudioClipTrackVolume(quieter[0], "mic")).toBe(1);
+		expect(quieter[1]).toBe(clips[1]);
+		expect(getAudioClipTrackGains(quieter[0])).toEqual({ system: 0.3 });
+		expect(getAudioClipTrackGains(quieter[1])).toBeUndefined();
+	});
+
+	it("mutes a track in every clip and clears the defaults", () => {
+		const clips = [clip({ id: "a" }), clip({ id: "b", startMs: 1_000, endMs: 2_000 })];
+		const muted = setAudioClipTrackMuted(clips, null, "mic", true);
+		expect(muted.every((item) => isAudioClipTrackMuted(item, "mic"))).toBe(true);
+		expect(getAudioClipTrackGain(muted[0], "mic")).toBe(0);
+		expect(getAudioClipTrackGain(muted[0], "system")).toBe(1);
+		const unmuted = setAudioClipTrackMuted(muted, null, "mic", false);
+		expect(unmuted[0]).not.toHaveProperty("mutedTracks");
+		const reset = setAudioClipTrackVolume(
+			setAudioClipTrackVolume(clips, null, "mic", 1.5),
+			null,
+			"mic",
+			1,
+		);
+		expect(reset[0]).not.toHaveProperty("trackVolumes");
+	});
+
+	it("clamps track volumes and keeps them through save and split", () => {
+		const [saved] =
+			normalizeAudioClipRegions([
+				{
+					id: "aclip-1",
+					startMs: 0,
+					endMs: 1_000,
+					speed: 1,
+					trackVolumes: { system: 9, mic: 1, bad: "x" },
+					mutedTracks: ["mic", "mic", 3],
+				},
+			]) ?? [];
+		expect(saved.trackVolumes).toEqual({ system: 2 });
+		expect(saved.mutedTracks).toEqual(["mic"]);
+		const split = splitAudioClip([saved], "aclip-1", 500, "aclip-2");
+		expect(split?.map((item) => getAudioClipTrackGains(item))).toEqual([
+			{ system: 2, mic: 0 },
+			{ system: 2, mic: 0 },
+		]);
 	});
 });
