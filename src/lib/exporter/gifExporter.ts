@@ -1,10 +1,11 @@
 import GIF from "gif.js";
+import type { ColorGrade } from "@/components/video-editor/colorGrade";
 import type {
 	AnnotationRegion,
 	AutoCaptionSettings,
 	CaptionCue,
-	CursorClickEffectStyle,
 	CropRegion,
+	CursorClickEffectStyle,
 	CursorStyle,
 	CursorTelemetryPoint,
 	Padding,
@@ -43,6 +44,7 @@ interface GifExporterConfig {
 	speedRegions?: SpeedRegion[];
 	showShadow: boolean;
 	shadowIntensity: number;
+	colorGrade?: ColorGrade;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	zoomMotionBlurTuning?: ZoomMotionBlurTuning;
@@ -143,6 +145,7 @@ export function buildGifFrameRendererConfig(
 		zoomRegions: config.zoomRegions,
 		showShadow: config.showShadow,
 		shadowIntensity: config.shadowIntensity,
+		colorGrade: config.colorGrade,
 		backgroundBlur: config.backgroundBlur,
 		zoomMotionBlur: config.zoomMotionBlur,
 		zoomMotionBlurTuning: config.zoomMotionBlurTuning,

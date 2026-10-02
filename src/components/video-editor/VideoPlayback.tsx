@@ -6,6 +6,7 @@ import {
 	forwardRef,
 	useCallback,
 	useEffect,
+	useId,
 	useImperativeHandle,
 	useMemo,
 	useRef,
@@ -43,6 +44,12 @@ import {
 	getCaptionWordVisualState,
 } from "./captionStyle";
 import { getTransitionFrameState, resolveClipTransitions } from "./clipTransitions";
+import {
+	type ColorGrade,
+	getColorGradeMatrix,
+	isNeutralColorGrade,
+	toSvgColorMatrixValues,
+} from "./colorGrade";
 import {
 	type AnnotationRegion,
 	type AutoCaptionSettings,
@@ -90,6 +97,7 @@ import {
 } from "./types";
 import { isAnnotationActiveAtTime } from "./videoPlayback/annotationVisibility";
 import { createClipPlayback, findPreviewClipAtTimelineTime } from "./videoPlayback/clipPlayback";
+import { ColorGradeFilter } from "./videoPlayback/colorGradeFilter";
 import { DEFAULT_FOCUS } from "./videoPlayback/constants";
 import {
 	type CursorFollowCameraState,
@@ -236,6 +244,7 @@ interface VideoPlaybackProps {
 	isPlaying: boolean;
 	showShadow?: boolean;
 	shadowIntensity?: number;
+	colorGrade?: ColorGrade;
 	backgroundBlur?: number;
 	connectZooms?: boolean;
 	zoomInDurationMs?: number;
@@ -322,6 +331,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			isPlaying,
 			showShadow,
 			shadowIntensity = 0,
+			colorGrade,
 			backgroundBlur = 0,
 			connectZooms = true,
 			zoomInDurationMs = DEFAULT_ZOOM_IN_DURATION_MS,
@@ -449,6 +459,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		const clipTransitionsRef = useRef(clipTransitions);
 		clipTransitionsRef.current = clipTransitions;
 		const freezeFrameRef = useRef<TransitionFreezeFrame | null>(null);
+		const colorGradeFilterRef = useRef<ColorGradeFilter | null>(null);
+		const colorGradeRef = useRef(colorGrade);
+		colorGradeRef.current = colorGrade;
+		const webcamColorFilterId = `webcam-grade-${useId().replace(/:/g, "")}`;
 		const transitionShadeRef = useRef<HTMLDivElement | null>(null);
 		const zoomRegionsRef = useRef<ZoomRegion[]>([]);
 		const selectedZoomIdRef = useRef<string | null>(null);
@@ -1908,6 +1922,10 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			const maskGraphics = new Graphics();
 			videoContainer.addChild(videoSprite);
 			videoContainer.addChild(freezeFrame.sprite);
+			const colorGradeFilter = new ColorGradeFilter();
+			colorGradeFilterRef.current = colorGradeFilter;
+			colorGradeFilter.update(colorGradeRef.current);
+			colorGradeFilter.applyTo([videoSprite, freezeFrame.sprite]);
 			cameraContainer.addChild(maskGraphics);
 			videoEffectsContainer.mask = maskGraphics;
 			maskGraphicsRef.current = maskGraphics;
@@ -1980,6 +1998,8 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				destroyPixiContainer(maskGraphics);
 				freezeFrame.destroy();
 				freezeFrameRef.current = null;
+				colorGradeFilter.destroy();
+				colorGradeFilterRef.current = null;
 				maskGraphicsRef.current = null;
 				if (!videoTexture.destroyed) videoTexture.destroy(false);
 				previewVideoSourceRef.current.suspend();
@@ -1987,6 +2007,22 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 				videoSpriteRef.current = null;
 			};
 		}, [autoPlay, onPlayStateChange, onTimeUpdate, pixiReady, videoReady]);
+
+		useEffect(() => {
+			const colorGradeFilter = colorGradeFilterRef.current;
+			if (!colorGradeFilter) return;
+			colorGradeFilter.update(colorGrade);
+			colorGradeFilter.applyTo([videoSpriteRef.current, freezeFrameRef.current?.sprite]);
+			if (suspendRenderingRef.current) appRef.current?.render();
+		}, [colorGrade]);
+
+		const webcamColorMatrix = useMemo(
+			() =>
+				colorGrade?.includeCamera && !isNeutralColorGrade(colorGrade)
+					? toSvgColorMatrixValues(getColorGradeMatrix(colorGrade))
+					: null,
+			[colorGrade],
+		);
 
 		useEffect(() => {
 			if (!pixiReady || !videoReady) return;
@@ -2522,10 +2558,31 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 											className="pointer-events-none absolute"
 											style={webcamCropPreviewContentStyle}
 										>
+											{webcamColorMatrix ? (
+												<svg
+													aria-hidden="true"
+													className="pointer-events-none absolute h-0 w-0"
+												>
+													<filter
+														id={webcamColorFilterId}
+														colorInterpolationFilters="sRGB"
+													>
+														<feColorMatrix
+															type="matrix"
+															values={webcamColorMatrix}
+														/>
+													</filter>
+												</svg>
+											) : null}
 											<video
 												ref={webcamVideoRef}
 												src={webcamVideoPath}
 												className="pointer-events-none absolute inset-0 block h-full w-full object-fill"
+												style={
+													webcamColorMatrix
+														? { filter: `url(#${webcamColorFilterId})` }
+														: undefined
+												}
 												muted
 												playsInline
 												preload="auto"

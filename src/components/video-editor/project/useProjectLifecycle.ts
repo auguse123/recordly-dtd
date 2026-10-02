@@ -194,6 +194,7 @@ export function useProjectLifecycle(input: Input) {
 		exportSettings.setGifFrameRate(editor.gifFrameRate);
 		exportSettings.setGifLoop(editor.gifLoop);
 		exportSettings.setIntroOutro(editor.introOutro);
+		appearance.setColorGrade(editor.colorGrade);
 		exportSettings.setGifSizePreset(editor.gifSizePreset);
 		timeline.setSelectedZoomId(null);
 		timeline.setSelectedClipId(null);

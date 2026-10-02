@@ -15,6 +15,7 @@ import { DEFAULT_WALLPAPER_PATH } from "@/lib/wallpapers";
 import { ASPECT_RATIOS, type AspectRatio, isCustomAspectRatio } from "@/utils/aspectRatioUtils";
 import { closeClipGaps, rippleRegionAnchors, rippleRegions } from "./clipSequence";
 import { normalizeClipTransition } from "./clipTransitions";
+import { type ColorGrade, normalizeColorGrade } from "./colorGrade";
 import { CURSOR_MOTION_PRESETS, resolveCursorMotionPresetId } from "./cursorMotionPresets";
 import { type IntroOutroSettings, normalizeIntroOutroSettings } from "./introOutro";
 import {
@@ -158,6 +159,7 @@ export interface ProjectEditorState {
 	gifLoop: boolean;
 	gifSizePreset: GifSizePreset;
 	introOutro: IntroOutroSettings;
+	colorGrade: ColorGrade;
 }
 
 export interface EditorProjectData {
@@ -1129,6 +1131,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 				? editor.gifSizePreset
 				: "medium",
 		introOutro: normalizeIntroOutroSettings(editor.introOutro),
+		colorGrade: normalizeColorGrade(editor.colorGrade),
 	};
 }
 

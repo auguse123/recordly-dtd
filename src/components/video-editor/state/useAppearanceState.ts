@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ColorGrade } from "../colorGrade";
 import type { EditorPreferences } from "../editorPreferences";
 import type {
 	CropRegion,
@@ -110,6 +111,7 @@ export function useAppearanceState(preferences: EditorPreferences) {
 	const [borderRadius, setBorderRadius] = useState(preferences.borderRadius);
 	const [padding, setPadding] = useState(preferences.padding);
 	const [cropRegion, setCropRegion] = useState<CropRegion>(DEFAULT_CROP_REGION);
+	const [colorGrade, setColorGrade] = useState<ColorGrade>(preferences.colorGrade);
 	const [webcam, setWebcam] = useState<WebcamOverlaySettings>(
 		preferences.webcam ?? DEFAULT_WEBCAM_OVERLAY,
 	);
@@ -198,6 +200,8 @@ export function useAppearanceState(preferences: EditorPreferences) {
 		setCropRegion,
 		webcam,
 		setWebcam,
+		colorGrade,
+		setColorGrade,
 		resolvedWebcamVideoUrl,
 		setResolvedWebcamVideoUrl,
 	};

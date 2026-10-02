@@ -16,6 +16,7 @@ import {
 	type ResolvedClipTransition,
 	resolveClipTransitions,
 } from "@/components/video-editor/clipTransitions";
+import { type ColorGrade, isNeutralColorGrade } from "@/components/video-editor/colorGrade";
 import type {
 	AnnotationRegion,
 	AutoCaptionSettings,
@@ -36,6 +37,7 @@ import {
 	DEFAULT_WEBCAM_ROUNDNESS,
 	getDefaultCaptionFontFamily,
 } from "@/components/video-editor/types";
+import { ColorGradeFilter } from "@/components/video-editor/videoPlayback/colorGradeFilter";
 import { DEFAULT_FOCUS } from "@/components/video-editor/videoPlayback/constants";
 import {
 	type CursorFollowCameraState,
@@ -117,6 +119,7 @@ interface FrameRenderConfig {
 	zoomRegions: ZoomRegion[];
 	showShadow: boolean;
 	shadowIntensity: number;
+	colorGrade?: ColorGrade;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	zoomMotionBlurTuning?: ZoomMotionBlurTuning;
@@ -389,6 +392,7 @@ export class FrameRenderer {
 	private videoTextureSource: MutableVideoTextureSource | null = null;
 	private clipTransitions: ResolvedClipTransition[] = [];
 	private freezeFrame: TransitionFreezeFrame | null = null;
+	private colorGradeFilter: ColorGradeFilter | null = null;
 	private transitionShade: Graphics | null = null;
 	private backgroundSprite: Sprite | null = null;
 	private backgroundTextureSource: MutableVideoTextureSource | null = null;
@@ -563,10 +567,16 @@ export class FrameRenderer {
 		this.videoEffectsContainer.addChild(this.videoMaskGraphics);
 		this.videoContainer.mask = this.videoMaskGraphics;
 
+		if (!isNeutralColorGrade(this.config.colorGrade)) {
+			this.colorGradeFilter = new ColorGradeFilter();
+			this.colorGradeFilter.update(this.config.colorGrade);
+		}
+
 		this.clipTransitions = resolveClipTransitions(this.config.clipRegions ?? []);
 		if (this.clipTransitions.length > 0) {
 			// The video sprite is inserted below it on the first frame.
 			this.freezeFrame = new TransitionFreezeFrame();
+			this.colorGradeFilter?.applyTo([this.freezeFrame.sprite]);
 			this.videoContainer.addChild(this.freezeFrame.sprite);
 			this.transitionShade = new Graphics()
 				.rect(0, 0, this.config.width, this.config.height)
@@ -2343,6 +2353,10 @@ export class FrameRenderer {
 		if (!this.webcamSprite) {
 			const texture = this.createTextureFromSource(resolvedSource);
 			this.webcamSprite = new Sprite(texture);
+			this.colorGradeFilter?.applyTo(
+				[this.webcamSprite],
+				this.config.colorGrade?.includeCamera ?? true,
+			);
 			this.webcamTextureSource = texture.source as unknown as MutableVideoTextureSource;
 			this.webcamContainer.addChildAt(this.webcamSprite, 0);
 			this.webcamTextureUsesStartupStaging = usesStartupStaging;
@@ -2921,6 +2935,7 @@ export class FrameRenderer {
 		if (!this.videoSprite) {
 			const texture = this.createTextureFromSource(resolvedVideoSource);
 			this.videoSprite = new Sprite(texture);
+			this.colorGradeFilter?.applyTo([this.videoSprite]);
 			this.videoTextureSource = texture.source as unknown as MutableVideoTextureSource;
 			this.videoContainer.addChildAt(this.videoSprite, 0);
 			this.videoTextureUsesStartupStaging = usesStartupStaging;
@@ -3302,6 +3317,8 @@ export class FrameRenderer {
 		this.backgroundBlurFilter?.destroy();
 		this.freezeFrame?.destroy();
 		this.freezeFrame = null;
+		this.colorGradeFilter?.destroy();
+		this.colorGradeFilter = null;
 		this.transitionShade = null;
 		this.clipTransitions = [];
 

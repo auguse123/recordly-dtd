@@ -19,6 +19,7 @@ import {
 	FrameCorners,
 	Gear,
 	MicrophoneIcon,
+	Palette,
 } from "@/components/ui/icons";
 import type { useI18n } from "@/contexts/I18nContext";
 import ExtensionManager from "../ExtensionManager";
@@ -69,6 +70,11 @@ export function EditorSidebar({
 				id: "introOutro" as const,
 				label: t("settings.sections.introOutro", "Intro / Outro"),
 				icon: FilmSlate,
+			},
+			{
+				id: "color" as const,
+				label: t("settings.sections.color", "Color"),
+				icon: Palette,
 			},
 			{
 				id: "voice" as const,

@@ -202,6 +202,8 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		introOutro,
 		onIntroOutroChange: setIntroOutro,
 		voiceMicPath: findMicSidecarPath(sourceAudioFallbackPaths),
+		colorGrade: appearance.colorGrade,
+		onColorGradeChange: appearance.setColorGrade,
 		onVoiceTrackChanged: () => timeline.setSourceAudioFallbackRefreshKey((key) => key + 1),
 		previewAspectRatio,
 		selectedAnnotationId: timeline.selectedAnnotationId,

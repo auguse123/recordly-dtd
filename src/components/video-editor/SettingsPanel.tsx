@@ -31,6 +31,7 @@ import type { AppLocale } from "../../i18n/config";
 import { SUPPORTED_LOCALES } from "../../i18n/config";
 import { AnnotationSettingsPanel } from "./AnnotationSettingsPanel";
 import CaptionListPanel from "./CaptionListPanel";
+import { ColorGradePanel } from "./ColorGradePanel";
 import type { CaptionRetimeSpan } from "./captionOps";
 import {
 	CLIP_TRANSITION_DEFAULT_MS,
@@ -39,6 +40,7 @@ import {
 	type ClipTransition,
 	type ClipTransitionType,
 } from "./clipTransitions";
+import type { ColorGrade } from "./colorGrade";
 import {
 	CURSOR_MOTION_PRESETS,
 	type CursorMotionPresetId,
@@ -433,6 +435,8 @@ interface SettingsPanelProps {
 	introOutro?: IntroOutroSettings;
 	onIntroOutroChange?: (settings: IntroOutroSettings) => void;
 	voiceMicPath?: string | null;
+	colorGrade?: ColorGrade;
+	onColorGradeChange?: (grade: ColorGrade) => void;
 	onVoiceTrackChanged?: () => void;
 	previewAspectRatio?: number;
 	panelMode?: "editor" | "background";
@@ -900,6 +904,8 @@ export function SettingsPanel({
 	onIntroOutroChange,
 	voiceMicPath,
 	onVoiceTrackChanged,
+	colorGrade,
+	onColorGradeChange,
 	previewAspectRatio = 16 / 9,
 	panelMode = "editor",
 	activeEffectSection: activeEffectSectionProp,
@@ -2892,6 +2898,13 @@ export function SettingsPanel({
 						settings={introOutro}
 						onChange={onIntroOutroChange}
 						aspectRatio={previewAspectRatio}
+					/>
+				) : null;
+			case "color":
+				return colorGrade && onColorGradeChange ? (
+					<ColorGradePanel
+						colorGrade={colorGrade}
+						onColorGradeChange={onColorGradeChange}
 					/>
 				) : null;
 			case "voice":

@@ -123,6 +123,7 @@ export type EditorEffectSection =
 	| "audio"
 	| "introOutro"
 	| "voice"
+	| "color"
 	| `ext:${string}`;
 
 export type ZoomTransitionEasing = "recordly" | "glide" | "smooth" | "snappy" | "linear";

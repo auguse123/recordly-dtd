@@ -171,7 +171,8 @@
 		"frame": "Kader",
 		"crop": "Bijsnijden",
 		"introOutro": "Intro / Outro",
-		"voice": "Voice"
+		"voice": "Voice",
+		"color": "Color"
 	},
 	"captions": {
 		"selectOnTimeline": "Selecteer een ondertitel op de tijdlijn om deze te bewerken.",
@@ -321,5 +322,24 @@
 		"restoring": "Restoring…",
 		"restored": "Previous voice restored.",
 		"failed": "Something went wrong with the voice track."
+	},
+	"colorGrade": {
+		"presets": "Looks",
+		"preset": {
+			"neutral": "Neutral",
+			"bright": "Bright",
+			"warm": "Warm",
+			"cool": "Cool",
+			"punchy": "Punchy",
+			"soft": "Soft",
+			"mono": "Black & white"
+		},
+		"brightness": "Brightness",
+		"contrast": "Contrast",
+		"saturation": "Saturation",
+		"temperature": "Temperature",
+		"includeCamera": "Apply to the camera too",
+		"reset": "Reset",
+		"hint": "The grade applies to the whole recording, in the preview and the export."
 	}
 }

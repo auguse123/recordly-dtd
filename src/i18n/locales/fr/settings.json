@@ -171,7 +171,8 @@
 		"frame": "Cadre",
 		"crop": "Recadrage",
 		"introOutro": "Début / Fin",
-		"voice": "Voix"
+		"voice": "Voix",
+		"color": "Couleur"
 	},
 	"captions": {
 		"selectOnTimeline": "Sélectionnez un sous-titre sur la timeline pour le modifier.",
@@ -321,5 +322,24 @@
 		"restoring": "Restauration…",
 		"restored": "Voix précédente restaurée.",
 		"failed": "Problème avec la piste voix."
+	},
+	"colorGrade": {
+		"presets": "Ambiances",
+		"preset": {
+			"neutral": "Neutre",
+			"bright": "Lumineux",
+			"warm": "Chaud",
+			"cool": "Froid",
+			"punchy": "Contrasté",
+			"soft": "Doux",
+			"mono": "Noir et blanc"
+		},
+		"brightness": "Luminosité",
+		"contrast": "Contraste",
+		"saturation": "Saturation",
+		"temperature": "Température",
+		"includeCamera": "Appliquer aussi à la caméra",
+		"reset": "Réinitialiser",
+		"hint": "L'étalonnage s'applique à tout l'enregistrement, dans l'aperçu et l'export."
 	}
 }

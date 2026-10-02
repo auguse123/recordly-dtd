@@ -171,7 +171,8 @@
 		"frame": "프레임",
 		"crop": "자르기",
 		"introOutro": "Intro / Outro",
-		"voice": "Voice"
+		"voice": "Voice",
+		"color": "Color"
 	},
 	"captions": {
 		"selectOnTimeline": "타임라인에서 자막을 선택하여 편집하세요.",
@@ -321,5 +322,24 @@
 		"restoring": "Restoring…",
 		"restored": "Previous voice restored.",
 		"failed": "Something went wrong with the voice track."
+	},
+	"colorGrade": {
+		"presets": "Looks",
+		"preset": {
+			"neutral": "Neutral",
+			"bright": "Bright",
+			"warm": "Warm",
+			"cool": "Cool",
+			"punchy": "Punchy",
+			"soft": "Soft",
+			"mono": "Black & white"
+		},
+		"brightness": "Brightness",
+		"contrast": "Contrast",
+		"saturation": "Saturation",
+		"temperature": "Temperature",
+		"includeCamera": "Apply to the camera too",
+		"reset": "Reset",
+		"hint": "The grade applies to the whole recording, in the preview and the export."
 	}
 }

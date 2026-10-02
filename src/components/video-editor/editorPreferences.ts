@@ -60,6 +60,7 @@ type PersistedEditorControls = Pick<
 	| "gifLoop"
 	| "gifSizePreset"
 	| "introOutro"
+	| "colorGrade"
 >;
 
 type PartialEditorControls = Partial<PersistedEditorControls>;
@@ -150,6 +151,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
 	gifLoop: DEFAULT_EDITOR_CONTROLS.gifLoop,
 	gifSizePreset: DEFAULT_EDITOR_CONTROLS.gifSizePreset,
 	introOutro: DEFAULT_EDITOR_CONTROLS.introOutro,
+	colorGrade: DEFAULT_EDITOR_CONTROLS.colorGrade,
 	customAspectWidth: "16",
 	customAspectHeight: "9",
 	customWallpapers: [],
@@ -369,6 +371,7 @@ function normalizeEditorControls(
 		gifLoop: sanitizedRaw.gifLoop ?? fallback.gifLoop,
 		gifSizePreset: sanitizedRaw.gifSizePreset ?? fallback.gifSizePreset,
 		introOutro: sanitizedRaw.introOutro ?? fallback.introOutro,
+		colorGrade: sanitizedRaw.colorGrade ?? fallback.colorGrade,
 	};
 
 	const normalized = normalizeProjectEditor(candidate);
@@ -422,6 +425,7 @@ function normalizeEditorControls(
 		gifLoop: normalized.gifLoop,
 		gifSizePreset: normalized.gifSizePreset,
 		introOutro: normalized.introOutro,
+		colorGrade: normalized.colorGrade,
 	};
 }
 

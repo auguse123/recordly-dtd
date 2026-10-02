@@ -1,3 +1,4 @@
+import { type ColorGrade, isNeutralColorGrade } from "@/components/video-editor/colorGrade";
 import type {
 	AnnotationRegion,
 	AudioRegion,
@@ -101,6 +102,7 @@ interface VideoExporterConfig extends ExportConfig {
 	speedRegions?: SpeedRegion[];
 	showShadow: boolean;
 	shadowIntensity: number;
+	colorGrade?: ColorGrade;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	zoomMotionBlurTuning?: ZoomMotionBlurTuning;
@@ -610,6 +612,7 @@ export class ModernVideoExporter {
 					zoomRegions: this.config.zoomRegions,
 					showShadow: this.config.showShadow,
 					shadowIntensity: this.config.shadowIntensity,
+					colorGrade: this.config.colorGrade,
 					backgroundBlur: this.config.backgroundBlur,
 					zoomMotionBlur: this.config.zoomMotionBlur,
 					zoomMotionBlurTuning: this.config.zoomMotionBlurTuning,
@@ -1692,6 +1695,7 @@ export class ModernVideoExporter {
 		const reasons: string[] = [];
 		if (requiresClipTimelineRendering(this.config.clipRegions))
 			reasons.push("explicit-clip-timeline");
+		if (!isNeutralColorGrade(this.config.colorGrade)) reasons.push("color-grade");
 		if (
 			typeof window === "undefined" ||
 			!window.electronAPI?.nativeStaticLayoutExport ||

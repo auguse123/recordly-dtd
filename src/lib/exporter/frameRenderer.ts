@@ -1,6 +1,12 @@
 import { Application, Container, Graphics, Rectangle, Sprite, Texture } from "pixi.js";
 import { MotionBlurFilter } from "pixi-filters/motion-blur";
 import { ZoomBlurFilter } from "pixi-filters/zoom-blur";
+import {
+	applyColorMatrixToPixels,
+	type ColorGrade,
+	getColorGradeMatrix,
+	isNeutralColorGrade,
+} from "@/components/video-editor/colorGrade";
 import type {
 	AnnotationRegion,
 	AutoCaptionSettings,
@@ -21,6 +27,7 @@ import {
 	BASE_PREVIEW_WIDTH,
 	DEFAULT_WEBCAM_ROUNDNESS,
 } from "@/components/video-editor/types";
+import { ColorGradeFilter } from "@/components/video-editor/videoPlayback/colorGradeFilter";
 import { DEFAULT_FOCUS } from "@/components/video-editor/videoPlayback/constants";
 import {
 	type CursorFollowCameraState,
@@ -44,7 +51,10 @@ import {
 } from "@/components/video-editor/videoPlayback/motionSmoothing";
 import { getSceneEffectMetrics } from "@/components/video-editor/videoPlayback/sceneEffects";
 import { resolveSceneZoomTarget } from "@/components/video-editor/videoPlayback/sceneMotion";
-import { getWebcamMediaTargetTimeSeconds, isWebcamVisibleAtSourceTime } from "@/components/video-editor/videoPlayback/webcamSync";
+import {
+	getWebcamMediaTargetTimeSeconds,
+	isWebcamVisibleAtSourceTime,
+} from "@/components/video-editor/videoPlayback/webcamSync";
 import {
 	applyZoomTransform,
 	computeZoomTransform,
@@ -76,7 +86,6 @@ import { renderCaptions } from "./captionRenderer";
 import { ForwardFrameSource } from "./forwardFrameSource";
 import { resolveMediaElementSource } from "./localMediaSource";
 
-
 interface FrameRenderConfig {
 	timelineEffects?: boolean;
 	width: number;
@@ -86,6 +95,7 @@ interface FrameRenderConfig {
 	zoomRegions: ZoomRegion[];
 	showShadow: boolean;
 	shadowIntensity: number;
+	colorGrade?: ColorGrade;
 	backgroundBlur: number;
 	zoomMotionBlur?: number;
 	zoomMotionBlurTuning?: ZoomMotionBlurTuning;
@@ -226,6 +236,7 @@ export class FrameRenderer {
 	private videoContainer: Container | null = null;
 	private cursorContainer: Container | null = null;
 	private videoSprite: Sprite | null = null;
+	private colorGradeFilter: ColorGradeFilter | null = null;
 	private videoTextureSource: VideoTextureSource | null = null;
 	private backgroundSprite: HTMLCanvasElement | null = null;
 	private maskGraphics: Graphics | null = null;
@@ -1405,6 +1416,11 @@ export class FrameRenderer {
 		if (!this.videoSprite) {
 			const texture = Texture.from(videoFrame as unknown as PixiTextureInput);
 			this.videoSprite = new Sprite(texture);
+			if (!isNeutralColorGrade(this.config.colorGrade)) {
+				this.colorGradeFilter = new ColorGradeFilter();
+				this.colorGradeFilter.update(this.config.colorGrade);
+				this.colorGradeFilter.applyTo([this.videoSprite]);
+			}
 			this.videoTextureSource = texture.source as unknown as VideoTextureSource;
 			this.videoContainer.addChild(this.videoSprite);
 			if (this.cursorOverlay && this.cursorContainer) {
@@ -1735,11 +1751,26 @@ export class FrameRenderer {
 		if (includeWebcam) this.drawWebcamOverlay(ctx, w, h);
 	}
 
+	private gradeWebcamFrameCache(): void {
+		const grade = this.config.colorGrade;
+		const ctx = this.webcamFrameCacheCtx;
+		const canvas = this.webcamFrameCacheCanvas;
+		if (!grade?.includeCamera || isNeutralColorGrade(grade) || !ctx || !canvas) return;
+		if (!(canvas.width > 0 && canvas.height > 0)) return;
+		const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		applyColorMatrixToPixels(image.data, getColorGradeMatrix(grade));
+		ctx.putImageData(image, 0, 0);
+	}
+
 	private drawWebcamOverlay(ctx: CanvasRenderingContext2D, width: number, height: number): void {
 		const webcam = this.config.webcam;
 		const webcamDecodedFrame = this.webcamDecodedFrame;
 		const webcamVideo = this.webcamVideoElement;
-		if (!webcam?.enabled || !isWebcamVisibleAtSourceTime(webcam, this.currentVideoTime) || (!webcamDecodedFrame && !webcamVideo)) {
+		if (
+			!webcam?.enabled ||
+			!isWebcamVisibleAtSourceTime(webcam, this.currentVideoTime) ||
+			(!webcamDecodedFrame && !webcamVideo)
+		) {
 			return;
 		}
 
@@ -1819,6 +1850,7 @@ export class FrameRenderer {
 				this.webcamFrameCacheCanvas!.width,
 				this.webcamFrameCacheCanvas!.height,
 			);
+			this.gradeWebcamFrameCache();
 		}
 
 		const webcamFrameSource =
@@ -1963,6 +1995,8 @@ export class FrameRenderer {
 	}
 
 	destroy(): void {
+		this.colorGradeFilter?.destroy();
+		this.colorGradeFilter = null;
 		if (this.videoSprite) {
 			const videoTexture = this.videoSprite.texture;
 			this.videoSprite.destroy({ texture: false, textureSource: false });

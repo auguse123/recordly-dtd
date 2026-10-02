@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useCallback, useMemo, useState } from "react";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
+import { normalizeColorGrade } from "../colorGrade";
 import { type EditorPresetSnapshot, loadEditorPresets } from "../editorPreferences";
 import type { useExportSettings } from "../export/useExportSettings";
 import { normalizeIntroOutroSettings } from "../introOutro";
@@ -89,6 +90,7 @@ export function useVideoEditorPresets({
 			gifFrameRate: exportSettings.gifFrameRate,
 			gifLoop: exportSettings.gifLoop,
 			introOutro: exportSettings.introOutro,
+			colorGrade: { ...appearance.colorGrade },
 			gifSizePreset: exportSettings.gifSizePreset,
 			autoCaptionSettings: { ...timeline.autoCaptionSettings },
 			whisperExecutablePath,
@@ -158,6 +160,7 @@ export function useVideoEditorPresets({
 			exportSettings.setGifFrameRate(snapshot.gifFrameRate);
 			exportSettings.setGifLoop(snapshot.gifLoop);
 			exportSettings.setIntroOutro(normalizeIntroOutroSettings(snapshot.introOutro));
+			appearance.setColorGrade(normalizeColorGrade(snapshot.colorGrade));
 			exportSettings.setGifSizePreset(snapshot.gifSizePreset);
 			timeline.setAutoCaptionSettings({ ...snapshot.autoCaptionSettings });
 			setWhisperExecutablePath(snapshot.whisperExecutablePath);
