@@ -95,9 +95,11 @@ export class TransitionFreezeFrame {
 	}
 
 	destroy(): void {
-		const texture = this.sprite.texture;
+		// The sprite may already be gone when the Pixi stage was torn down first;
+		// a destroyed sprite reports a null texture.
+		const texture = this.sprite.destroyed ? null : this.sprite.texture;
 		this.sprite.destroy();
-		if (texture !== Texture.EMPTY) texture.destroy(true);
+		if (texture && texture !== Texture.EMPTY && !texture.destroyed) texture.destroy(true);
 		this.canvas = null;
 	}
 }

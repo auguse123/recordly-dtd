@@ -35,3 +35,12 @@ describe("TransitionFreezeFrame seams", () => {
 		expect(TransitionFreezeFrame.findCutSeam(transitions, 8000)).toBeNull();
 	});
 });
+
+describe("TransitionFreezeFrame.destroy", () => {
+	it("survives a sprite already destroyed with the Pixi stage", () => {
+		const freezeFrame = new TransitionFreezeFrame();
+		freezeFrame.sprite.destroy();
+		expect(() => freezeFrame.destroy()).not.toThrow();
+		expect(() => freezeFrame.destroy()).not.toThrow();
+	});
+});

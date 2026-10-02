@@ -14,6 +14,7 @@ export class ColorGradeFilter {
 	 */
 	readonly filter = new ColorMatrixFilter({ resolution: "inherit", antialias: "inherit" });
 	private neutral = true;
+	private destroyed = false;
 
 	update(grade: ColorGrade | null | undefined): void {
 		this.neutral = !grade || isNeutralColorGrade(grade);
@@ -31,6 +32,8 @@ export class ColorGradeFilter {
 	}
 
 	destroy(): void {
+		if (this.destroyed) return;
+		this.destroyed = true;
 		this.filter.destroy();
 	}
 }
